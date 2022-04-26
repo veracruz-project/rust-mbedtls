@@ -30,18 +30,10 @@ impl super::BuildConfig {
 
         dst.push("build");
         dst.push("library");
-        println!(
-            "cargo:rustc-link-search=native={}",
-            dst.to_str().expect("link-search UTF-8 error")
-        );
 
         assert!(dst.pop());
         dst.push("crypto");
         dst.push("library");
-        println!(
-            "cargo:rustc-link-search=native={}",
-            dst.to_str().expect("link-search UTF-8 error")
-        );
 
         println!("cargo:rustc-link-lib=mbedtls");
         println!("cargo:rustc-link-lib=mbedx509");
