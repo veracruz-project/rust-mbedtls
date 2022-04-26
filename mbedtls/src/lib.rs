@@ -106,7 +106,7 @@ mod alloc_prelude {
 }
 
 cfg_if::cfg_if! {
-    if #[cfg(sys_time_component = "custom")] {
+    if #[cfg(sys_time_component = "custom_xx")] {
         use mbedtls_sys::types::{time_t, tm};
 
         // needs to be pub for global visiblity
