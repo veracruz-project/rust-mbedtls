@@ -30,7 +30,7 @@ psa-crypto-sys = { path = "../../rust-psa-crypto/psa-crypto-sys" }
 libc = { version = "0.2.0" }
 
 [build-dependencies]
-bindgen = "0.58.0"
+bindgen = "0.59.2"
 cmake = "0.1.17"
 cc = "1.0.45"
 lazy_static = "1.4"
