@@ -217,3 +217,18 @@ define!(
         EcdheEcdsaWithChacha20Poly1305Sha256 = TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
     }
 );
+
+pub fn lookup_ciphersuite(name: &str) -> Option<c_int> {
+    let c_str = match std::ffi::CString::new(name) {
+        Ok(x) => x.into_bytes(),
+        Err(_) => return None,
+    };
+    unsafe {
+        let p = mbedtls_sys::ssl_ciphersuite_from_string(c_str.as_ptr() as *const i8);
+        if p.is_null() {
+            None
+        } else {
+            Some((*p).id)
+        }
+    }
+}
