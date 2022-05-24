@@ -1,3 +1,20 @@
+/*
+ * AUTHORS
+ *
+ * The Veracruz Development Team.
+ *
+ * COPYRIGHT
+ *
+ * See the `LICENSE_MIT.markdown` file in the Veracruz root directory
+ * for licensing and copyright information.
+ *
+ */
+
+// This file contains the complete configuration of mbedtls used for
+// Veracruz on several platforms, including IceCap. This file can be
+// found in both rust-mbedtls and rust-psa-crypto, and the two copies
+// should be kept the same in case the layout of some struct depends
+// on the config.
 
 #ifndef MBEDTLS_CONFIG_H
 #define MBEDTLS_CONFIG_H

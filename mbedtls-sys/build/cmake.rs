@@ -30,10 +30,26 @@ impl super::BuildConfig {
 
         dst.push("build");
         dst.push("library");
+        if false {
+            // This is removed on Veracruz so that we pick up the library
+            // from rust-psa-crypto instead.
+            println!(
+                "cargo:rustc-link-search=native={}",
+                dst.to_str().expect("link-search UTF-8 error")
+            );
+        }
 
         assert!(dst.pop());
         dst.push("crypto");
         dst.push("library");
+        if false {
+            // This is removed on Veracruz so that we pick up the library
+            // from rust-psa-crypto instead.
+            println!(
+                "cargo:rustc-link-search=native={}",
+                dst.to_str().expect("link-search UTF-8 error")
+            );
+        }
 
         println!("cargo:rustc-link-lib=mbedtls");
         println!("cargo:rustc-link-lib=mbedx509");
