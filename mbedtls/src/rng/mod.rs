@@ -8,7 +8,9 @@
 
 pub mod ctr_drbg;
 pub mod hmac_drbg;
-#[cfg(sys_std_component = "entropy")]
+// Veracruz: It was necessary to comment out this condition for IceCap:
+// IceCap has the "entropy" component but it is not detected.
+//#[cfg(sys_std_component = "entropy")]
 pub mod os_entropy;
 #[cfg(any(feature = "rdrand", target_env = "sgx"))]
 mod rdrand;
@@ -17,7 +19,8 @@ mod rdrand;
 pub use self::ctr_drbg::CtrDrbg;
 #[doc(inline)]
 pub use self::hmac_drbg::HmacDrbg;
-#[cfg(sys_std_component = "entropy")]
+// See above.
+//#[cfg(sys_std_component = "entropy")]
 #[doc(inline)]
 pub use self::os_entropy::OsEntropy;
 #[cfg(any(feature = "rdrand", target_env = "sgx"))]
