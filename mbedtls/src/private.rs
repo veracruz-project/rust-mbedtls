@@ -94,5 +94,9 @@ use core_io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
 pub fn error_to_io_error(e: Error) -> IoError {
-    IoError::new(IoErrorKind::Other, e.to_string())
+    let io_err = match e {
+        Error::SslWantRead | Error::SslWantWrite => IoErrorKind::WouldBlock,
+        _ => IoErrorKind::Other,
+    };
+    IoError::new(io_err, e.to_string())
 }

@@ -46,7 +46,13 @@ impl<IO: Read + Write> IoCallback for IO {
         };
         match (&mut *(user_data as *mut IO)).read(::core::slice::from_raw_parts_mut(data, len)) {
             Ok(i) => i as c_int,
-            Err(_) => ::mbedtls_sys::ERR_NET_RECV_FAILED,
+            Err(err) => {
+                if err.kind() == std::io::ErrorKind::WouldBlock {
+                    ::mbedtls_sys::ERR_SSL_WANT_READ
+                } else {
+                    ::mbedtls_sys::ERR_NET_RECV_FAILED
+                }
+            },
         }
     }
 
@@ -58,7 +64,13 @@ impl<IO: Read + Write> IoCallback for IO {
         };
         match (&mut *(user_data as *mut IO)).write(::core::slice::from_raw_parts(data, len)) {
             Ok(i) => i as c_int,
-            Err(_) => ::mbedtls_sys::ERR_NET_SEND_FAILED,
+            Err(err) => {
+                if err.kind() == std::io::ErrorKind::WouldBlock {
+                    ::mbedtls_sys::ERR_SSL_WANT_WRITE
+                } else {
+                    ::mbedtls_sys::ERR_NET_SEND_FAILED
+                }
+            },
         }
     }
 
