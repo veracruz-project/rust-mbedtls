@@ -65,6 +65,17 @@ impl BuildConfig {
                 f.write_all(config::SUFFIX.as_bytes())
             })
             .expect("config.h I/O error");
+
+        // Now overwrite that config file with special Veracruz config file.
+        File::create(&self.config_h)
+            .and_then(|mut f| {
+                let config_file = self
+                    .mbedtls_src
+                    .join(Path::new("..").join("build").join("veracruz-config.h"));
+                let config_txt = std::fs::read_to_string(config_file)?;
+                f.write_all(config_txt.as_bytes())
+            })
+            .expect("config.h I/O error");
     }
 
     fn print_rerun_files(&self) {
@@ -88,6 +99,13 @@ impl BuildConfig {
                 f.expect("DirEntry failed").path().display()
             );
         }
+        // Veracruz config file:
+        println!(
+            "cargo:rerun-if-changed={}",
+            self.mbedtls_src
+                .join(Path::new("..").join("build").join("veracruz-config.h"))
+                .display()
+        );
     }
 
     fn new() -> Self {
