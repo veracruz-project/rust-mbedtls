@@ -6,7 +6,7 @@
  * option. This file may not be copied, modified, or distributed except
  * according to those terms. */
 
-use mbedtls_sys::types::raw_types::c_int;
+use mbedtls_sys::types::raw_types::{c_char, c_int};
 use mbedtls_sys::*;
 
 /// Always use into() to convert to i32, do not use 'as i32'. (until issue is fixed: https://github.com/fortanix/rust-mbedtls/issues/129)
@@ -223,3 +223,18 @@ define!(
         RsaPskWithChacha20Poly1305Sha256 = TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256,
     }
 );
+
+pub fn lookup_ciphersuite(name: &str) -> Option<c_int> {
+    let c_str = match std::ffi::CString::new(name) {
+        Ok(x) => x.into_bytes(),
+        Err(_) => return None,
+    };
+    unsafe {
+        let p = mbedtls_sys::ssl_ciphersuite_from_string(c_str.as_ptr() as *const c_char);
+        if p.is_null() {
+            None
+        } else {
+            Some((*p).id)
+        }
+    }
+}
