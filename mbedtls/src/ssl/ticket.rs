@@ -22,7 +22,7 @@ use crate::rng::RngCallback;
 pub trait TicketCallback: Sync {
     unsafe extern "C" fn call_write(
         p_ticket: *mut c_void,
-        session: *const ssl_session,
+        session: *const mbedtls_ssl_session,
         start: *mut c_uchar,
         end: *const c_uchar,
         tlen: *mut size_t,
@@ -30,7 +30,7 @@ pub trait TicketCallback: Sync {
     ) -> c_int where Self: Sized;
     unsafe extern "C" fn call_parse(
         p_ticket: *mut c_void,
-        session: *mut ssl_session,
+        session: *mut mbedtls_ssl_session,
         buf: *mut c_uchar,
         len: size_t,
     ) -> c_int where Self: Sized;
@@ -40,14 +40,14 @@ pub trait TicketCallback: Sync {
 
 
 define!(
-    #[c_ty(ssl_ticket_context)]
+    #[c_ty(mbedtls_ssl_ticket_context)]
     #[repr(C)]
     struct TicketContext {
         // We set rng from constructur, we never read it directly. It is only used to ensure rng lives as long as we need.
         #[allow(dead_code)]
         rng: Arc<dyn RngCallback + Send + 'static>,
     };
-    const drop: fn(&mut Self) = ssl_ticket_free;
+    const drop: fn(&mut Self) = mbedtls_ssl_ticket_free;
     impl<'a> Into<ptr> {}
 );
 
@@ -60,11 +60,11 @@ impl TicketContext {
         lifetime: u32,
     ) -> Result<TicketContext> {
 
-        let mut ret = TicketContext { inner: ssl_ticket_context::default(), rng };
+        let mut ret = TicketContext { inner: mbedtls_ssl_ticket_context::default(), rng };
 
         unsafe {
-            ssl_ticket_init(&mut ret.inner);
-            ssl_ticket_setup(
+            mbedtls_ssl_ticket_init(&mut ret.inner);
+            mbedtls_ssl_ticket_setup(
                 &mut ret.inner,
                 Some(T::call),
                 ret.rng.data_ptr(),
@@ -80,22 +80,22 @@ impl TicketContext {
 impl TicketCallback for TicketContext {
     unsafe extern "C" fn call_write(
         p_ticket: *mut c_void,
-        session: *const ssl_session,
+        session: *const mbedtls_ssl_session,
         start: *mut c_uchar,
         end: *const c_uchar,
         tlen: *mut size_t,
         lifetime: *mut u32,
     ) -> c_int {
-        ssl_ticket_write(p_ticket, session, start, end, tlen, lifetime)
+        mbedtls_ssl_ticket_write(p_ticket, session, start, end, tlen, lifetime)
     }
 
     unsafe extern "C" fn call_parse(
         p_ticket: *mut c_void,
-        session: *mut ssl_session,
+        session: *mut mbedtls_ssl_session,
         buf: *mut c_uchar,
         len: size_t,
     ) -> c_int {
-        ssl_ticket_parse(p_ticket, session, buf, len)
+        mbedtls_ssl_ticket_parse(p_ticket, session, buf, len)
     }
 
     fn data_ptr(&self) -> *mut c_void {

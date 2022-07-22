@@ -59,17 +59,17 @@ impl BERDecodable for Extension {
 
 
 define!(
-    #[c_ty(x509_crt)]
+    #[c_ty(mbedtls_x509_crt)]
     #[repr(transparent)]
     struct Certificate;
-    const drop: fn(&mut Self) = x509_crt_free;
+    const drop: fn(&mut Self) = mbedtls_x509_crt_free;
     impl<'a> Into<ptr> {}
     impl<'a> UnsafeFrom<ptr> {}
 );
 
 unsafe impl Sync for Certificate {}
 
-fn x509_buf_to_vec(buf: &x509_buf) -> Vec<u8> {
+fn x509_buf_to_vec(buf: &mbedtls_x509_buf) -> Vec<u8> {
     if buf.p.is_null() || buf.len == 0 {
         return vec![];
     }
@@ -78,7 +78,7 @@ fn x509_buf_to_vec(buf: &x509_buf) -> Vec<u8> {
     slice.to_owned()
 }
 
-fn x509_time_to_time(tm: &x509_time) -> Result<Time> {
+fn x509_time_to_time(tm: &mbedtls_x509_time) -> Result<Time> {
     // ensure casts don't underflow
     if tm.year < 0 || tm.mon < 0 || tm.day < 0 || tm.hour < 0 || tm.min < 0 || tm.sec < 0 {
         return Err(Error::X509InvalidDate);
@@ -91,14 +91,14 @@ fn x509_time_to_time(tm: &x509_time) -> Result<Time> {
 impl Certificate {
     pub fn from_der(der: &[u8]) -> Result<MbedtlsBox<Certificate>> {
         let mut cert = MbedtlsBox::<Certificate>::init()?;
-        unsafe { x509_crt_parse_der((&mut (*cert)).into(), der.as_ptr(), der.len()) }.into_result()?;
+        unsafe { mbedtls_x509_crt_parse_der((&mut (*cert)).into(), der.as_ptr(), der.len()) }.into_result()?;
         Ok(cert)
     }
 
     /// Input must be NULL-terminated
     pub fn from_pem(pem: &[u8]) -> Result<MbedtlsBox<Certificate>> {
         let mut cert = MbedtlsBox::<Certificate>::init()?;
-        unsafe { x509_crt_parse((&mut (*cert)).into(), pem.as_ptr(), pem.len()) }.into_result()?;
+        unsafe { mbedtls_x509_crt_parse((&mut (*cert)).into(), pem.as_ptr(), pem.len()) }.into_result()?;
         
         if !(*cert).inner.next.is_null() {
             // Use from_pem_multiple for parsing multiple certificates in a pem.
@@ -111,7 +111,7 @@ impl Certificate {
     /// Input must be NULL-terminated
     pub fn from_pem_multiple(pem: &[u8]) -> Result<MbedtlsList<Certificate>> {
         let mut cert = MbedtlsBox::<Certificate>::init()?;
-        unsafe { x509_crt_parse((&mut (*cert)).into(), pem.as_ptr(), pem.len()) }.into_result()?;
+        unsafe { mbedtls_x509_crt_parse((&mut (*cert)).into(), pem.as_ptr(), pem.len()) }.into_result()?;
 
         let mut list = MbedtlsList::<Certificate>::new();
         list.push(cert);
@@ -119,14 +119,14 @@ impl Certificate {
     }
     
     pub fn check_key_usage(&self, usage: super::KeyUsage) -> bool {
-        unsafe { x509_crt_check_key_usage(&self.inner, usage.bits()) }
+        unsafe { mbedtls_x509_crt_check_key_usage(&self.inner, usage.bits()) }
             .into_result()
             .is_ok()
     }
 
     pub fn check_extended_key_usage(&self, usage_oid: &[c_char]) -> bool {
         unsafe {
-            x509_crt_check_extended_key_usage(&self.inner, usage_oid.as_ptr(), usage_oid.len())
+            mbedtls_x509_crt_check_extended_key_usage(&self.inner, usage_oid.as_ptr(), usage_oid.len())
         }
         .into_result()
         .is_ok()
@@ -134,7 +134,7 @@ impl Certificate {
 
     pub fn issuer(&self) -> Result<String> {
         crate::private::alloc_string_repeat(|buf, size| unsafe {
-            x509_dn_gets(buf, size, &self.inner.issuer)
+            mbedtls_x509_dn_gets(buf, size, &self.inner.issuer)
         })
     }
 
@@ -144,7 +144,7 @@ impl Certificate {
 
     pub fn subject(&self) -> Result<String> {
         crate::private::alloc_string_repeat(|buf, size| unsafe {
-            x509_dn_gets(buf, size, &self.inner.subject)
+            mbedtls_x509_dn_gets(buf, size, &self.inner.subject)
         })
     }
 
@@ -154,7 +154,7 @@ impl Certificate {
 
     pub fn serial(&self) -> Result<String> {
         crate::private::alloc_string_repeat(|buf, size| unsafe {
-            x509_serial_gets(buf, size, &self.inner.serial)
+            mbedtls_x509_serial_gets(buf, size, &self.inner.serial)
         })
     }
 
@@ -240,7 +240,7 @@ impl Certificate {
         };
         let mut flags = 0;
         let result = unsafe {
-            x509_crt_verify(
+            mbedtls_x509_crt_verify(
                 chain.inner_ffi_mut(),
                 trust_ca.inner_ffi_mut(),
                 ::core::ptr::null_mut(),
@@ -256,7 +256,7 @@ impl Certificate {
             if let Some(err_info) = err_info {
                 let verify_info = crate::private::alloc_string_repeat(|buf, size| unsafe {
                     let prefix = "\0";
-                    x509_crt_verify_info(buf, size, prefix.as_ptr() as *const _, flags)
+                    mbedtls_x509_crt_verify_info(buf, size, prefix.as_ptr() as *const _, flags)
                 });
                 if let Ok(error_str) = verify_info {
                     *err_info = error_str;
@@ -299,7 +299,7 @@ impl Certificate {
 impl fmt::Debug for Certificate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match crate::private::alloc_string_repeat(|buf, size| unsafe {
-            x509_crt_info(buf, size, b"\0".as_ptr() as *const _, &self.inner)
+            mbedtls_x509_crt_info(buf, size, b"\0".as_ptr() as *const _, &self.inner)
         }) {
             Err(_) => Err(fmt::Error),
             Ok(s) => f.write_str(&s),
@@ -308,15 +308,15 @@ impl fmt::Debug for Certificate {
 }
 
 define!(
-    #[c_ty(x509write_cert)]
+    #[c_ty(mbedtls_x509write_cert)]
     struct Builder<'a>;
-    pub const new: fn() -> Self = x509write_crt_init;
-    const drop: fn(&mut Self) = x509write_crt_free;
+    pub const new: fn() -> Self = mbedtls_x509write_crt_init;
+    const drop: fn(&mut Self) = mbedtls_x509write_crt_free;
 );
 
 impl<'a> Builder<'a> {
     unsafe fn subject_with_nul_unchecked(&mut self, subject: &[u8]) -> Result<&mut Self> {
-        x509write_crt_set_subject_name(&mut self.inner, subject.as_ptr() as *const _).into_result()?;
+        mbedtls_x509write_crt_set_subject_name(&mut self.inner, subject.as_ptr() as *const _).into_result()?;
         Ok(self)
     }
 
@@ -337,7 +337,7 @@ impl<'a> Builder<'a> {
     }
 
     unsafe fn issuer_with_nul_unchecked(&mut self, issuer: &[u8]) -> Result<&mut Self> {
-        x509write_crt_set_issuer_name(&mut self.inner, issuer.as_ptr() as *const _).into_result()?;
+        mbedtls_x509write_crt_set_issuer_name(&mut self.inner, issuer.as_ptr() as *const _).into_result()?;
         Ok(self)
     }
 
@@ -358,28 +358,28 @@ impl<'a> Builder<'a> {
     }
 
     pub fn subject_key(&mut self, key: &'a mut Pk) -> &mut Self {
-        unsafe { x509write_crt_set_subject_key(&mut self.inner, key.into()) };
+        unsafe { mbedtls_x509write_crt_set_subject_key(&mut self.inner, key.into()) };
         self
     }
 
     pub fn issuer_key(&mut self, key: &'a mut Pk) -> &mut Self {
-        unsafe { x509write_crt_set_issuer_key(&mut self.inner, key.into()) };
+        unsafe { mbedtls_x509write_crt_set_issuer_key(&mut self.inner, key.into()) };
         self
     }
 
     pub fn signature_hash(&mut self, md: MdType) -> &mut Self {
-        unsafe { x509write_crt_set_md_alg(&mut self.inner, md.into()) };
+        unsafe { mbedtls_x509write_crt_set_md_alg(&mut self.inner, md.into()) };
         self
     }
 
     pub fn key_usage(&mut self, usage: crate::x509::KeyUsage) -> Result<&mut Self> {
-        unsafe { x509write_crt_set_key_usage(&mut self.inner, usage.bits()) }.into_result()?;
+        unsafe { mbedtls_x509write_crt_set_key_usage(&mut self.inner, usage.bits()) }.into_result()?;
         Ok(self)
     }
 
     pub fn extension(&mut self, oid: &[u8], val: &[u8], critical: bool) -> Result<&mut Self> {
         unsafe {
-            x509write_crt_set_extension(
+            mbedtls_x509write_crt_set_extension(
                 &mut self.inner,
                 oid.as_ptr() as *const _,
                 oid.len(),
@@ -392,7 +392,7 @@ impl<'a> Builder<'a> {
 
     pub fn basic_constraints(&mut self, ca: bool, pathlen: Option<u32>) -> Result<&mut Self> {
         unsafe {
-            x509write_crt_set_basic_constraints(
+            mbedtls_x509write_crt_set_basic_constraints(
                 &mut self.inner,
                 ca as _,
                 pathlen.unwrap_or(0) as _
@@ -407,7 +407,7 @@ impl<'a> Builder<'a> {
         not_after: super::Time,
     ) -> Result<&mut Self> {
         unsafe {
-            x509write_crt_set_validity(
+            mbedtls_x509write_crt_set_validity(
                 &mut self.inner,
                 not_before.to_x509_time().as_ptr() as _,
                 not_after.to_x509_time().as_ptr() as _
@@ -418,7 +418,7 @@ impl<'a> Builder<'a> {
 
     pub fn serial(&mut self, serial: &[u8]) -> Result<&mut Self> {
         let serial = crate::bignum::Mpi::from_binary(serial)?;
-        unsafe { x509write_crt_set_serial(&mut self.inner, (&serial).into()) }.into_result()?;
+        unsafe { mbedtls_x509write_crt_set_serial(&mut self.inner, (&serial).into()) }.into_result()?;
         Ok(self)
     }
 
@@ -428,7 +428,7 @@ impl<'a> Builder<'a> {
         rng: &mut F,
     ) -> Result<Option<&'buf [u8]>> {
         match unsafe {
-            x509write_crt_der(
+            mbedtls_x509write_crt_der(
                 &mut self.inner,
                 buf.as_mut_ptr(),
                 buf.len(),
@@ -446,7 +446,7 @@ impl<'a> Builder<'a> {
     pub fn write_der_vec<F: Random>(&mut self, rng: &mut F) -> Result<Vec<u8>> {
         crate::private::alloc_vec_repeat(
             |buf, size| unsafe {
-                x509write_crt_der(&mut self.inner, buf, size, Some(F::call), rng.data_ptr())
+                mbedtls_x509write_crt_der(&mut self.inner, buf, size, Some(F::call), rng.data_ptr())
             },
             true,
         )
@@ -458,7 +458,7 @@ impl<'a> Builder<'a> {
         rng: &mut F,
     ) -> Result<Option<&'buf [u8]>> {
         match unsafe {
-            x509write_crt_der(
+            mbedtls_x509write_crt_der(
                 &mut self.inner,
                 buf.as_mut_ptr(),
                 buf.len(),
@@ -475,7 +475,7 @@ impl<'a> Builder<'a> {
 
     pub fn write_pem_string<F: Random>(&mut self, rng: &mut F) -> Result<String> {
         crate::private::alloc_string_repeat(|buf, size| unsafe {
-            match x509write_crt_pem(
+            match mbedtls_x509write_crt_pem(
                 &mut self.inner,
                 buf as _,
                 size,
@@ -499,13 +499,13 @@ impl<'a> Builder<'a> {
 impl MbedtlsBox<Certificate> {
     fn init() -> Result<Self> {
         unsafe {
-            let inner = forward_mbedtls_calloc(1, core::mem::size_of::<x509_crt>()) as *mut x509_crt;
+            let inner = forward_mbedtls_calloc(1, core::mem::size_of::<mbedtls_x509_crt>()) as *mut mbedtls_x509_crt;
 
             // If alignment is wrong it means someone pushed their own allocator to mbedtls and that is not functioning correctly.
-            assert_eq!(inner.align_offset(core::mem::align_of::<x509_crt>()), 0);
+            assert_eq!(inner.align_offset(core::mem::align_of::<mbedtls_x509_crt>()), 0);
 
             let inner = NonNull::new(inner).ok_or(Error::X509AllocFailed)?;
-            x509_crt_init(inner.as_ptr());
+            mbedtls_x509_crt_init(inner.as_ptr());
             
             Ok(MbedtlsBox { inner: inner.cast() })
         }
@@ -542,14 +542,14 @@ impl Clone for MbedtlsBox<Certificate> {
     }
 }
 
-impl<'a> UnsafeFrom<*const *mut x509_crt> for &'a Option<MbedtlsBox<Certificate>> {
-    unsafe fn from(ptr: *const *mut x509_crt) -> Option<&'a Option<MbedtlsBox<Certificate>>> {
+impl<'a> UnsafeFrom<*const *mut mbedtls_x509_crt> for &'a Option<MbedtlsBox<Certificate>> {
+    unsafe fn from(ptr: *const *mut mbedtls_x509_crt) -> Option<&'a Option<MbedtlsBox<Certificate>>> {
         (ptr as *const Option<MbedtlsBox<Certificate>>).as_ref()
     }
 }
 
-impl<'a> UnsafeFrom<*mut *mut x509_crt> for &'a mut Option<MbedtlsBox<Certificate>> {
-    unsafe fn from(ptr: *mut *mut x509_crt) -> Option<&'a mut Option<MbedtlsBox<Certificate>>> {
+impl<'a> UnsafeFrom<*mut *mut mbedtls_x509_crt> for &'a mut Option<MbedtlsBox<Certificate>> {
+    unsafe fn from(ptr: *mut *mut mbedtls_x509_crt) -> Option<&'a mut Option<MbedtlsBox<Certificate>>> {
         (ptr as *mut Option<MbedtlsBox<Certificate>>).as_mut()
     }
 }
@@ -559,9 +559,9 @@ impl MbedtlsList<Certificate> {
         Self { inner: None }
     }
 
-    pub(crate) fn into_raw(mut self) -> *mut x509_crt {
+    pub(crate) fn into_raw(mut self) -> *mut mbedtls_x509_crt {
         // This leaks a *mut Certificate that we can cast to x509_crt as it's transparent and has no extra fields.
-        self.inner.take().map(|x| x.into_raw()).unwrap_or(core::ptr::null_mut()) as *mut x509_crt
+        self.inner.take().map(|x| x.into_raw()).unwrap_or(core::ptr::null_mut()) as *mut mbedtls_x509_crt
     }
     
     pub fn is_empty(&self) -> bool {
@@ -611,8 +611,8 @@ impl MbedtlsList<Certificate> {
         IterMut { next: self.inner.as_mut() }
     }
 
-    pub(crate) unsafe fn inner_ffi_mut(&self) -> *mut x509_crt {
-        self.inner.as_ref().map_or(::core::ptr::null_mut(), |c| c.inner.as_ptr() as *mut x509_crt)
+    pub(crate) unsafe fn inner_ffi_mut(&self) -> *mut mbedtls_x509_crt {
+        self.inner.as_ref().map_or(::core::ptr::null_mut(), |c| c.inner.as_ptr() as *mut mbedtls_x509_crt)
     }
 }
 
@@ -622,20 +622,20 @@ impl Clone for MbedtlsList<Certificate> {
     }
 }
 
-impl Into<*const x509_crt> for &MbedtlsList<Certificate> {
-    fn into(self) -> *const x509_crt {
-        self.inner.as_ref().map_or(::core::ptr::null_mut(), |c| c.inner.as_ptr() as *const x509_crt)
+impl Into<*const mbedtls_x509_crt> for &MbedtlsList<Certificate> {
+    fn into(self) -> *const mbedtls_x509_crt {
+        self.inner.as_ref().map_or(::core::ptr::null_mut(), |c| c.inner.as_ptr() as *const mbedtls_x509_crt)
     }
 }
 
-impl Into<*mut x509_crt> for &mut MbedtlsList<Certificate> {
-    fn into(self) -> *mut x509_crt {
-        self.inner.as_ref().map_or(::core::ptr::null_mut(), |c| c.inner.as_ptr() as *mut x509_crt)
+impl Into<*mut mbedtls_x509_crt> for &mut MbedtlsList<Certificate> {
+    fn into(self) -> *mut mbedtls_x509_crt {
+        self.inner.as_ref().map_or(::core::ptr::null_mut(), |c| c.inner.as_ptr() as *mut mbedtls_x509_crt)
     }
 }
 
-impl<'a> UnsafeFrom<*const *const x509_crt> for &'a MbedtlsList<Certificate> {
-    unsafe fn from(ptr: *const *const x509_crt) -> Option<&'a MbedtlsList<Certificate>> {
+impl<'a> UnsafeFrom<*const *const mbedtls_x509_crt> for &'a MbedtlsList<Certificate> {
+    unsafe fn from(ptr: *const *const mbedtls_x509_crt) -> Option<&'a MbedtlsList<Certificate>> {
         if ptr.is_null() || (*ptr).is_null() {
             return None;
         }
@@ -644,8 +644,8 @@ impl<'a> UnsafeFrom<*const *const x509_crt> for &'a MbedtlsList<Certificate> {
     }
 }
 
-impl<'a> UnsafeFrom<*mut *mut x509_crt> for &'a mut MbedtlsList<Certificate> {
-    unsafe fn from(ptr: *mut *mut x509_crt) -> Option<&'a mut MbedtlsList<Certificate>> {
+impl<'a> UnsafeFrom<*mut *mut mbedtls_x509_crt> for &'a mut MbedtlsList<Certificate> {
+    unsafe fn from(ptr: *mut *mut mbedtls_x509_crt) -> Option<&'a mut MbedtlsList<Certificate>> {
         if ptr.is_null() || (*ptr).is_null() {
             return None;
         }

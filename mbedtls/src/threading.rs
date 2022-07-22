@@ -80,7 +80,7 @@ impl StaticMutex {
 
             0
         } else {
-            ::mbedtls_sys::ERR_THREADING_BAD_INPUT_DATA
+            ::mbedtls_sys::MBEDTLS_ERR_THREADING_BAD_INPUT_DATA
         }
     }
 
@@ -89,7 +89,7 @@ impl StaticMutex {
             m.guard.take();
             0
         } else {
-            ::mbedtls_sys::ERR_THREADING_BAD_INPUT_DATA
+            ::mbedtls_sys::MBEDTLS_ERR_THREADING_BAD_INPUT_DATA
         }
     }
 }

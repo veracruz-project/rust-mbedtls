@@ -18,13 +18,13 @@ use crate::rng::{EntropyCallback,EntropyCallbackMut};
 callback!(EntropySourceCallbackMut,EntropySourceCallback(data: *mut c_uchar, size: size_t, out: *mut size_t) -> c_int);
 
 define!(
-    #[c_ty(entropy_context)]
+    #[c_ty(mbedtls_entropy_context)]
     #[repr(C)]
     struct OsEntropy {
         sources: Vec<Arc<dyn EntropySourceCallback + 'static>>,
     };
-    pub const new: fn() -> Self = entropy_init { sources: Vec::with_capacity(1), };
-    const drop: fn(&mut Self) = entropy_free;
+    pub const new: fn() -> Self = mbedtls_entropy_init { sources: Vec::with_capacity(1), };
+    const drop: fn(&mut Self) = mbedtls_entropy_free;
     impl<'a> Into<ptr> {}
 );
 
@@ -49,12 +49,12 @@ impl OsEntropy {
         unsafe {
             // add_source is guarded with internal mutex: mbedtls-sys/vendor/crypto/library/entropy.c:143
             // all sources are called at later points via 'entropy_gather_internal' which in turn is called with internal mutex locked.
-            entropy_add_source(
+            mbedtls_entropy_add_source(
                 self.inner_ffi_mut(),
                 Some(F::call),
                 source.data_ptr(),
                 threshold,
-                if strong { ENTROPY_SOURCE_STRONG } else { ENTROPY_SOURCE_WEAK }
+                if strong { MBEDTLS_ENTROPY_SOURCE_STRONG } else { MBEDTLS_ENTROPY_SOURCE_WEAK }
             )
             .into_result()?
         };
@@ -66,13 +66,13 @@ impl OsEntropy {
 
     pub fn gather(&self) -> Result<()> {
         // function is guarded with internal mutex: mbedtls-sys/vendor/crypto/library/entropy.c:310
-        unsafe { entropy_gather(self.inner_ffi_mut()) }.into_result()?;
+        unsafe { mbedtls_entropy_gather(self.inner_ffi_mut()) }.into_result()?;
         Ok(())
     }
 
     pub fn update_manual(&self, data: &[u8]) -> Result<()> {
         // function is guarded with internal mutex: mbedtls-sys/vendor/crypto/library/entropy.c:241
-        unsafe { entropy_update_manual(self.inner_ffi_mut(), data.as_ptr(), data.len()) }.into_result()?;
+        unsafe { mbedtls_entropy_update_manual(self.inner_ffi_mut(), data.as_ptr(), data.len()) }.into_result()?;
         Ok(())
     }
 
@@ -88,7 +88,7 @@ impl EntropyCallback for OsEntropy {
     unsafe extern "C" fn call(user_data: *mut c_void, data: *mut c_uchar, len: size_t) -> c_int {
         // mutex used in entropy_func: ../../../mbedtls-sys/vendor/crypto/library/entropy.c:348
         // note: we're not using MBEDTLS_ENTROPY_NV_SEED so the initialization is not present or a race condition.
-        entropy_func(user_data, data, len)
+        mbedtls_entropy_func(user_data, data, len)
     }
 
     fn data_ptr(&self) -> *mut c_void {
@@ -101,7 +101,7 @@ impl EntropyCallbackMut for OsEntropy {
     unsafe extern "C" fn call_mut(user_data: *mut c_void, data: *mut c_uchar, len: size_t) -> c_int {
         // mutex used in entropy_func: ../../../mbedtls-sys/vendor/crypto/library/entropy.c:348
         // note: we're not using MBEDTLS_ENTROPY_NV_SEED so the initialization is not present or a race condition.
-        entropy_func(user_data, data, len)
+        mbedtls_entropy_func(user_data, data, len)
     }
 
     fn data_ptr_mut(&mut self) -> *mut c_void {

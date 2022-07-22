@@ -44,8 +44,8 @@ pub enum Version {
 define!(
     #[c_ty(c_int)]
     enum Endpoint {
-        Client = SSL_IS_CLIENT,
-        Server = SSL_IS_SERVER,
+        Client = MBEDTLS_SSL_IS_CLIENT,
+        Server = MBEDTLS_SSL_IS_SERVER,
     }
 );
 
@@ -53,17 +53,17 @@ define!(
     #[c_ty(c_int)]
     enum Transport {
         /// TLS
-        Stream = SSL_TRANSPORT_STREAM,
+        Stream = MBEDTLS_SSL_TRANSPORT_STREAM,
         /// DTLS
-        Datagram = SSL_TRANSPORT_DATAGRAM,
+        Datagram = MBEDTLS_SSL_TRANSPORT_DATAGRAM,
     }
 );
 
 define!(
     #[c_ty(c_int)]
     enum Preset {
-        Default = SSL_PRESET_DEFAULT,
-        SuiteB = SSL_PRESET_SUITEB,
+        Default = MBEDTLS_SSL_PRESET_DEFAULT,
+        SuiteB = MBEDTLS_SSL_PRESET_SUITEB,
     }
 );
 
@@ -71,27 +71,27 @@ define!(
     #[c_ty(c_int)]
     enum AuthMode {
         /// **INSECURE** on client, default on server
-        None = SSL_VERIFY_NONE,
+        None = MBEDTLS_SSL_VERIFY_NONE,
         /// **INSECURE**
-        Optional = SSL_VERIFY_OPTIONAL,
+        Optional = MBEDTLS_SSL_VERIFY_OPTIONAL,
         /// default on client
-        Required = SSL_VERIFY_REQUIRED,
+        Required = MBEDTLS_SSL_VERIFY_REQUIRED,
     }
 );
 
 define!(
     #[c_ty(c_int)]
     enum UseSessionTickets {
-        Enabled = SSL_SESSION_TICKETS_ENABLED,
-        Disabled = SSL_SESSION_TICKETS_DISABLED,
+        Enabled = MBEDTLS_SSL_SESSION_TICKETS_ENABLED,
+        Disabled = MBEDTLS_SSL_SESSION_TICKETS_DISABLED,
     }
 );
 
 define!(
     #[c_ty(c_int)]
     enum Renegotiation {
-        Enabled = SSL_RENEGOTIATION_ENABLED,
-        Disabled = SSL_RENEGOTIATION_DISABLED,
+        Enabled = MBEDTLS_SSL_RENEGOTIATION_ENABLED,
+        Disabled = MBEDTLS_SSL_RENEGOTIATION_DISABLED,
     }
 );
 
@@ -141,7 +141,7 @@ impl Drop for NullTerminatedStrList {
 }
 
 define!(
-    #[c_ty(ssl_config)]
+    #[c_ty(mbedtls_ssl_config)]
     #[repr(C)]
     struct Config {
         // Holding reference counters against any structures that ssl_config might hold pointer to.
@@ -155,7 +155,7 @@ define!(
         rng: Option<Arc<dyn RngCallback + 'static>>,
         
         ciphersuites: Vec<Arc<Vec<c_int>>>,
-        curves: Option<Arc<Vec<ecp_group_id>>>,
+        curves: Option<Arc<Vec<mbedtls_ecp_group_id>>>,
         protocols: Option<Arc<NullTerminatedStrList>>,
         
         verify_callback: Option<Arc<dyn VerifyCallback + 'static>>,
@@ -165,7 +165,7 @@ define!(
         ticket_callback: Option<Arc<dyn TicketCallback + 'static>>,
         ca_callback: Option<Arc<dyn CaCallback + 'static>>,
     };
-    const drop: fn(&mut Self) = ssl_config_free;
+    const drop: fn(&mut Self) = mbedtls_ssl_config_free;
     impl<'a> Into<ptr> {}
 );
 
@@ -173,14 +173,14 @@ unsafe impl Sync for Config {}
 
 impl Config {
     pub fn new(e: Endpoint, t: Transport, p: Preset) -> Self {
-        let mut inner = ssl_config::default();
+        let mut inner = mbedtls_ssl_config::default();
 
         unsafe {
             // This is just a memset to 0.
-            ssl_config_init(&mut inner);
+            mbedtls_ssl_config_init(&mut inner);
 
             // Set default values - after this point we will need ssl_config_free to be called.
-            ssl_config_defaults(&mut inner, e as c_int, t as c_int, p as c_int);
+            mbedtls_ssl_config_defaults(&mut inner, e as c_int, t as c_int, p as c_int);
         };
 
         Config {
@@ -203,13 +203,13 @@ impl Config {
     }
 
     // need bitfield support getter!(endpoint() -> Endpoint = field endpoint);
-    setter!(set_endpoint(e: Endpoint) = ssl_conf_endpoint);
+    setter!(set_endpoint(e: Endpoint) = mbedtls_ssl_conf_endpoint);
     // need bitfield support getter!(transport() -> Transport = field transport);
-    setter!(set_transport(t: Transport) = ssl_conf_transport);
+    setter!(set_transport(t: Transport) = mbedtls_ssl_conf_transport);
     // need bitfield support getter!(authmode() -> AuthMode = field authmode);
-    setter!(set_authmode(am: AuthMode) = ssl_conf_authmode);
+    setter!(set_authmode(am: AuthMode) = mbedtls_ssl_conf_authmode);
     getter!(read_timeout() -> u32 = .read_timeout);
-    setter!(set_read_timeout(t: u32) = ssl_conf_read_timeout);
+    setter!(set_read_timeout(t: u32) = mbedtls_ssl_conf_read_timeout);
 
     fn check_c_list<T: Default + Eq>(list: &[T]) {
         assert!(list.last() == Some(&T::default()));
@@ -218,14 +218,14 @@ impl Config {
     pub fn set_ciphersuites(&mut self, list: Arc<Vec<c_int>>) {
         Self::check_c_list(&list);
 
-        unsafe { ssl_conf_ciphersuites(self.into(), list.as_ptr()) }
+        unsafe { mbedtls_ssl_conf_ciphersuites(self.into(), list.as_ptr()) }
         self.ciphersuites.push(list);
     }
 
     /// Set the supported Application Layer Protocols.
     pub fn set_alpn_protocols(&mut self, protocols: Arc<NullTerminatedStrList>) -> Result<()> {
         unsafe {
-            ssl_conf_alpn_protocols(&mut self.inner, protocols.as_ptr() as *mut _)
+            mbedtls_ssl_conf_alpn_protocols(&mut self.inner, protocols.as_ptr() as *mut _)
                 .into_result()
                 .map(|_| ())?;
         }
@@ -236,18 +236,18 @@ impl Config {
     
     pub fn set_ciphersuites_for_version(&mut self, list: Arc<Vec<c_int>>, major: c_int, minor: c_int) {
         Self::check_c_list(&list);
-        unsafe { ssl_conf_ciphersuites_for_version(self.into(), list.as_ptr(), major, minor) }
+        unsafe { mbedtls_ssl_conf_ciphersuites_for_version(self.into(), list.as_ptr(), major, minor) }
         self.ciphersuites.push(list);
     }
 
-    pub fn set_curves(&mut self, list: Arc<Vec<ecp_group_id>>) {
+    pub fn set_curves(&mut self, list: Arc<Vec<mbedtls_ecp_group_id>>) {
         Self::check_c_list(&list);
-        unsafe { ssl_conf_curves(self.into(), list.as_ptr()) }
+        unsafe { mbedtls_ssl_conf_curves(self.into(), list.as_ptr()) }
         self.curves = Some(list);
     }
 
     pub fn set_rng<T: RngCallback + 'static>(&mut self, rng: Arc<T>) {
-        unsafe { ssl_conf_rng(self.into(), Some(T::call), rng.data_ptr()) };
+        unsafe { mbedtls_ssl_conf_rng(self.into(), Some(T::call), rng.data_ptr()) };
         self.rng = Some(rng);
     }
     
@@ -260,7 +260,7 @@ impl Config {
             _ => { return Err(Error::SslBadHsProtocolVersion); }
         };
 
-        unsafe { ssl_conf_min_version(self.into(), 3, minor) };
+        unsafe { mbedtls_ssl_conf_min_version(self.into(), 3, minor) };
         Ok(())
     }
 
@@ -272,12 +272,12 @@ impl Config {
             Version::Tls1_2 => 3,
             _ => { return Err(Error::SslBadHsProtocolVersion); }
         };
-        unsafe { ssl_conf_max_version(self.into(), 3, minor) };
+        unsafe { mbedtls_ssl_conf_max_version(self.into(), 3, minor) };
         Ok(())
     }
 
     // Profile as implemented in profile.rs can only point to global variables from mbedtls which would have 'static lifetime
-    setter!(set_cert_profile(p: &'static Profile) = ssl_conf_cert_profile);
+    setter!(set_cert_profile(p: &'static Profile) = mbedtls_ssl_conf_cert_profile);
 
     /// Takes both DER and PEM forms of FFDH parameters in `DHParams` format.
     ///
@@ -285,7 +285,7 @@ impl Config {
     pub fn set_dh_params(&mut self, dhm: &Dhm) -> Result<()> {
         unsafe {
             // This copies the dhm parameters and does not store any pointer to it
-            ssl_conf_dh_param_ctx(self.into(), dhm.inner_ffi_mut())
+            mbedtls_ssl_conf_dh_param_ctx(self.into(), dhm.inner_ffi_mut())
                 .into_result()
                 .map(|_| ())?;
         }
@@ -295,7 +295,7 @@ impl Config {
     pub fn set_ca_list(&mut self, ca_cert: Arc<MbedtlsList<Certificate>>, crl: Option<Arc<Crl>>) {
         // This will override internal pointers to what we provide.
         
-        unsafe { ssl_conf_ca_chain(self.into(), ca_cert.inner_ffi_mut(), crl.as_ref().map(|crl| crl.inner_ffi_mut()).unwrap_or(::core::ptr::null_mut())); }
+        unsafe { mbedtls_ssl_conf_ca_chain(self.into(), ca_cert.inner_ffi_mut(), crl.as_ref().map(|crl| crl.inner_ffi_mut()).unwrap_or(::core::ptr::null_mut())); }
 
         self.ca_cert = Some(ca_cert);
         self.crl = crl;        
@@ -307,7 +307,7 @@ impl Config {
         self.own_pk.push(own_pk.clone());
 
         // This will append pointers to our certificates inside mbedtls
-        unsafe { ssl_conf_own_cert(self.into(), own_cert.inner_ffi_mut(), own_pk.inner_ffi_mut())
+        unsafe { mbedtls_ssl_conf_own_cert(self.into(), own_cert.inner_ffi_mut(), own_pk.inner_ffi_mut())
                  .into_result()
                  .map(|_| ())
         }
@@ -316,7 +316,7 @@ impl Config {
     /// Server only: configure callback to use for generating/interpreting session tickets.
     pub fn set_session_tickets_callback<T: TicketCallback + 'static>(&mut self, cb: Arc<T>) {
         unsafe {
-            ssl_conf_session_tickets_cb(
+            mbedtls_ssl_conf_session_tickets_cb(
                 self.into(),
                 Some(T::call_write),
                 Some(T::call_parse),
@@ -329,14 +329,14 @@ impl Config {
 
     setter!(
         /// Client only: whether to remember and use session tickets
-        set_session_tickets(u: UseSessionTickets) = ssl_conf_session_tickets
+        set_session_tickets(u: UseSessionTickets) = mbedtls_ssl_conf_session_tickets
     );
 
-    setter!(set_renegotiation(u: Renegotiation) = ssl_conf_renegotiation);
+    setter!(set_renegotiation(u: Renegotiation) = mbedtls_ssl_conf_renegotiation);
 
     setter!(
         /// Client only: minimal FFDH group size
-        set_ffdh_min_bitlen(bitlen: c_uint) = ssl_conf_dhm_min_bitlen
+        set_ffdh_min_bitlen(bitlen: c_uint) = mbedtls_ssl_conf_dhm_min_bitlen
     );
     
     pub fn set_sni_callback<F>(&mut self, cb: F)
@@ -345,7 +345,7 @@ impl Config {
     {
         unsafe extern "C" fn sni_callback<F>(
             closure: *mut c_void,
-            ctx: *mut ssl_context,
+            ctx: *mut mbedtls_ssl_context,
             name: *const c_uchar,
             name_len: size_t,
         ) -> c_int
@@ -377,7 +377,7 @@ impl Config {
 
         
         self.sni_callback = Some(Arc::new(cb));
-        unsafe { ssl_conf_sni(self.into(), Some(sni_callback::<F>), &**self.sni_callback.as_mut().unwrap() as *const _ as *mut c_void) }
+        unsafe { mbedtls_ssl_conf_sni(self.into(), Some(sni_callback::<F>), &**self.sni_callback.as_mut().unwrap() as *const _ as *mut c_void) }
     }
 
     // The docs for mbedtls_x509_crt_verify say "The [callback] should return 0 for anything but a
@@ -388,7 +388,7 @@ impl Config {
         F: VerifyCallback + 'static,
     {
         self.verify_callback = Some(Arc::new(cb));
-        unsafe { ssl_conf_verify(self.into(), Some(x509::verify_callback::<F>), &**self.verify_callback.as_ref().unwrap() as *const _ as *mut c_void) }
+        unsafe { mbedtls_ssl_conf_verify(self.into(), Some(x509::verify_callback::<F>), &**self.verify_callback.as_ref().unwrap() as *const _ as *mut c_void) }
     }
 
     pub fn set_ca_callback<F>(&mut self, cb: F)
@@ -397,18 +397,18 @@ impl Config {
     {
         unsafe extern "C" fn ca_callback<F>(
             closure: *mut c_void,
-            child: *const x509_crt,
-            candidate_cas: *mut *mut x509_crt
+            child: *const mbedtls_x509_crt,
+            candidate_cas: *mut *mut mbedtls_x509_crt
         ) -> c_int
         where
             F: CaCallback + 'static,
         {
             if child.is_null() || closure.is_null() || candidate_cas.is_null() {
-                return ::mbedtls_sys::ERR_X509_BAD_INPUT_DATA;
+                return ::mbedtls_sys::MBEDTLS_ERR_X509_BAD_INPUT_DATA;
             }
 
             let cb = &mut *(closure as *mut F);
-            let crt: &MbedtlsList<Certificate> = UnsafeFrom::from(&child as *const *const x509_crt).expect("valid certificate");
+            let crt: &MbedtlsList<Certificate> = UnsafeFrom::from(&child as *const *const mbedtls_x509_crt).expect("valid certificate");
             match cb(&crt) {
                 Ok(list) => {
                     // This does not leak due to mbedtls taking ownership from us and freeing the certificates itself. (logic is in: mbedtls-sys/vendor/library/x509_crt.c:2904)
@@ -420,7 +420,7 @@ impl Config {
         }
 
         self.ca_callback = Some(Arc::new(cb));
-        unsafe { ssl_conf_ca_cb( self.into(), Some(ca_callback::<F>), &**self.ca_callback.as_mut().unwrap() as *const _ as *mut c_void) }
+        unsafe { mbedtls_ssl_conf_ca_cb( self.into(), Some(ca_callback::<F>), &**self.ca_callback.as_mut().unwrap() as *const _ as *mut c_void) }
     }
 
     #[cfg(feature = "std")]
@@ -455,7 +455,7 @@ impl Config {
         }
 
         self.dbg_callback = Some(Arc::new(cb));
-        unsafe { ssl_conf_dbg(self.into(), Some(dbg_callback::<F>), &**self.dbg_callback.as_mut().unwrap() as *const _ as *mut c_void) }
+        unsafe { mbedtls_ssl_conf_dbg(self.into(), Some(dbg_callback::<F>), &**self.dbg_callback.as_mut().unwrap() as *const _ as *mut c_void) }
     }
 }
 

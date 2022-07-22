@@ -16,7 +16,26 @@ use core::ptr;
 use core::slice::from_raw_parts;
 use core::str;
 use core::result::Result;
-use mbedtls_sys::*;
+use mbedtls_sys::{
+    MBEDTLS_CIPHER_ID_AES as CIPHER_ID_AES,
+    MBEDTLS_CIPHER_ID_ARIA as CIPHER_ID_ARIA,
+    MBEDTLS_CIPHER_ID_DES as CIPHER_ID_DES,
+    MBEDTLS_CIPHER_ID_3DES as CIPHER_ID_3DES,
+    MBEDTLS_MODE_CBC as MODE_CBC,
+    MBEDTLS_MODE_CFB as MODE_CFB,
+    MBEDTLS_MODE_CTR as MODE_CTR,
+    MBEDTLS_MODE_ECB as MODE_ECB,
+    MBEDTLS_MODE_GCM as MODE_GCM,
+    MBEDTLS_MODE_OFB as MODE_OFB,
+    mbedtls_aes_context as aes_context,
+    mbedtls_aria_context as aria_context,
+    mbedtls_cipher_context_t as cipher_context_t,
+    mbedtls_cipher_id_t as cipher_id_t,
+    mbedtls_cipher_mode_t as cipher_mode_t,
+    mbedtls_des_context as des_context,
+    mbedtls_des3_context as des3_context,
+    mbedtls_gcm_context as gcm_context,
+};
 use serde;
 use serde::de::Unexpected;
 use serde::ser::SerializeSeq;

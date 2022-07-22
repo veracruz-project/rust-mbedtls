@@ -48,9 +48,9 @@ impl<IO: Read + Write> IoCallback for IO {
             Ok(i) => i as c_int,
             Err(err) => {
                 if err.kind() == std::io::ErrorKind::WouldBlock {
-                    ::mbedtls_sys::ERR_SSL_WANT_READ
+                    ::mbedtls_sys::MBEDTLS_ERR_SSL_WANT_READ
                 } else {
-                    ::mbedtls_sys::ERR_NET_RECV_FAILED
+                    ::mbedtls_sys::MBEDTLS_ERR_NET_RECV_FAILED
                 }
             },
         }
@@ -66,9 +66,9 @@ impl<IO: Read + Write> IoCallback for IO {
             Ok(i) => i as c_int,
             Err(err) => {
                 if err.kind() == std::io::ErrorKind::WouldBlock {
-                    ::mbedtls_sys::ERR_SSL_WANT_WRITE
+                    ::mbedtls_sys::MBEDTLS_ERR_SSL_WANT_WRITE
                 } else {
-                    ::mbedtls_sys::ERR_NET_SEND_FAILED
+                    ::mbedtls_sys::MBEDTLS_ERR_NET_SEND_FAILED
                 }
             },
         }
@@ -81,7 +81,7 @@ impl<IO: Read + Write> IoCallback for IO {
 
 
 define!(
-    #[c_ty(ssl_context)]
+    #[c_ty(mbedtls_ssl_context)]
     #[repr(C)]
     struct HandshakeContext {
         handshake_ca_cert: Option<Arc<MbedtlsList<Certificate>>>,
@@ -108,25 +108,25 @@ pub struct Context<T> {
     io: Option<Box<T>>,
 }
 
-impl<'a, T> Into<*const ssl_context> for &'a Context<T> {
-    fn into(self) -> *const ssl_context {
+impl<'a, T> Into<*const mbedtls_ssl_context> for &'a Context<T> {
+    fn into(self) -> *const mbedtls_ssl_context {
         self.handle()
     }
 }
 
-impl<'a, T> Into<*mut ssl_context> for &'a mut Context<T> {
-    fn into(self) -> *mut ssl_context {
+impl<'a, T> Into<*mut mbedtls_ssl_context> for &'a mut Context<T> {
+    fn into(self) -> *mut mbedtls_ssl_context {
         self.handle_mut()
     }
 }
 
 impl<T> Context<T> {
     pub fn new(config: Arc<Config>) -> Self {
-        let mut inner = ssl_context::default();
+        let mut inner = mbedtls_ssl_context::default();
         
         unsafe {
-            ssl_init(&mut inner);
-            ssl_setup(&mut inner, (&*config).into());
+            mbedtls_ssl_init(&mut inner);
+            mbedtls_ssl_setup(&mut inner, (&*config).into());
         };
 
         Context {
@@ -143,11 +143,11 @@ impl<T> Context<T> {
         }
     }
 
-    pub(crate) fn handle(&self) -> &::mbedtls_sys::ssl_context {
+    pub(crate) fn handle(&self) -> &::mbedtls_sys::mbedtls_ssl_context {
         self.inner.handle()
     }
 
-    pub(crate) fn handle_mut(&mut self) -> &mut ::mbedtls_sys::ssl_context {
+    pub(crate) fn handle_mut(&mut self) -> &mut ::mbedtls_sys::mbedtls_ssl_context {
         self.inner.handle_mut()
     }
 }
@@ -156,11 +156,11 @@ impl<T: IoCallback> Context<T> {
     pub fn establish(&mut self, io: T, hostname: Option<&str>) -> Result<()> {
         unsafe {
             let mut io = Box::new(io);
-            ssl_session_reset(self.into()).into_result()?;
+            mbedtls_ssl_session_reset(self.into()).into_result()?;
             self.set_hostname(hostname)?;
 
             let ptr = &mut *io as *mut _ as *mut c_void;
-            ssl_set_bio(
+            mbedtls_ssl_set_bio(
                 self.into(),
                 ptr,
                 Some(T::call_send),
@@ -188,8 +188,8 @@ impl<T: IoCallback> Context<T> {
 impl<T> Context<T> {
     fn handshake(&mut self) -> Result<()> {
         unsafe {
-            ssl_flush_output(self.into()).into_result()?;
-            ssl_handshake(self.into()).into_result_discard()
+            mbedtls_ssl_flush_output(self.into()).into_result()?;
+            mbedtls_ssl_handshake(self.into()).into_result_discard()
         }
     }
 
@@ -206,7 +206,7 @@ impl<T> Context<T> {
         if let Some(s) = hostname {
             let cstr = ::std::ffi::CString::new(s).map_err(|_| Error::SslBadInputData)?;
             unsafe {
-                ssl_set_hostname(self.into(), cstr.as_ptr())
+                mbedtls_ssl_set_hostname(self.into(), cstr.as_ptr())
                     .into_result()
                     .map(|_| ())
             }
@@ -216,7 +216,7 @@ impl<T> Context<T> {
     }
 
     pub fn verify_result(&self) -> StdResult<(), VerifyError> {
-        match unsafe { ssl_get_verify_result(self.into()) } {
+        match unsafe { mbedtls_ssl_get_verify_result(self.into()) } {
             0 => Ok(()),
             flags => Err(VerifyError::from_bits_truncate(flags)),
         }
@@ -228,8 +228,8 @@ impl<T> Context<T> {
     
     pub fn close(&mut self) {
         unsafe {
-            ssl_close_notify(self.into());
-            ssl_set_bio(self.into(), ::core::ptr::null_mut(), None, None, None);
+            mbedtls_ssl_close_notify(self.into());
+            mbedtls_ssl_set_bio(self.into(), ::core::ptr::null_mut(), None, None, None);
             self.io = None;
         }
     }
@@ -255,7 +255,7 @@ impl<T> Context<T> {
     /// Return the number of bytes currently available to read that
     /// are stored in the Session's internal read buffer
     pub fn bytes_available(&self) -> usize {
-        unsafe { ssl_get_bytes_avail(self.into()) }
+        unsafe { mbedtls_ssl_get_bytes_avail(self.into()) }
     }
 
     pub fn version(&self) -> Version {
@@ -292,7 +292,7 @@ impl<T> Context<T> {
 
         unsafe {
             // We cannot call the peer cert function as we need a pointer to a pointer to create the MbedtlsList, we need something in the heap / cannot use any local variable for that.
-            let peer_cert : &MbedtlsList<Certificate> = UnsafeFrom::from(&((*self.handle().session).peer_cert) as *const *mut x509_crt as *const *const x509_crt).ok_or(Error::SslBadInputData)?;
+            let peer_cert : &MbedtlsList<Certificate> = UnsafeFrom::from(&((*self.handle().session).peer_cert) as *const *mut mbedtls_x509_crt as *const *const mbedtls_x509_crt).ok_or(Error::SslBadInputData)?;
             Ok(Some(peer_cert))
         }
     }
@@ -301,7 +301,7 @@ impl<T> Context<T> {
     #[cfg(feature = "std")]
     pub fn get_alpn_protocol(&self) -> Result<Option<&str>> {
         unsafe {
-            let ptr = ssl_get_alpn_protocol(self.handle());
+            let ptr = mbedtls_ssl_get_alpn_protocol(self.handle());
             if ptr.is_null() {
                 Ok(None)
             } else {
@@ -316,14 +316,14 @@ impl<T> Drop for Context<T> {
     fn drop(&mut self) {
         unsafe {
             self.close();
-            ssl_free(self.into());
+            mbedtls_ssl_free(self.into());
         }
     }
 }
 
 impl<T: IoCallback> Read for Context<T> {
     fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
-        match unsafe { ssl_read(self.into(), buf.as_mut_ptr(), buf.len()).into_result() } {
+        match unsafe { mbedtls_ssl_read(self.into(), buf.as_mut_ptr(), buf.len()).into_result() } {
             Err(Error::SslPeerCloseNotify) => Ok(0),
             Err(e) => Err(crate::private::error_to_io_error(e)),
             Ok(i) => Ok(i as usize),
@@ -333,7 +333,7 @@ impl<T: IoCallback> Read for Context<T> {
 
 impl<T: IoCallback> Write for Context<T> {
     fn write(&mut self, buf: &[u8]) -> IoResult<usize> {
-        match unsafe { ssl_write(self.into(), buf.as_ptr(), buf.len()).into_result() } {
+        match unsafe { mbedtls_ssl_write(self.into(), buf.as_ptr(), buf.len()).into_result() } {
             Err(Error::SslPeerCloseNotify) => Ok(0),
             Err(e) => Err(crate::private::error_to_io_error(e)),
             Ok(i) => Ok(i as usize),
@@ -369,7 +369,7 @@ impl HandshakeContext {
             return Err(Error::SslBadInputData);
         }
         
-        unsafe { ssl_set_hs_authmode(self.into(), am as i32) }
+        unsafe { mbedtls_ssl_set_hs_authmode(self.into(), am as i32) }
         Ok(())
     }
 
@@ -385,7 +385,7 @@ impl HandshakeContext {
 
         // This will override current handshake CA chain.
         unsafe {
-            ssl_set_hs_ca_chain(
+            mbedtls_ssl_set_hs_ca_chain(
                 self.into(),
                 chain.as_ref().map(|chain| chain.inner_ffi_mut()).unwrap_or(::core::ptr::null_mut()),
                 crl.as_ref().map(|crl| crl.inner_ffi_mut()).unwrap_or(::core::ptr::null_mut()),
@@ -413,7 +413,7 @@ impl HandshakeContext {
 
         // This will append provided certificate pointers in internal structures.
         unsafe {
-            ssl_set_hs_own_cert(self.into(), chain.inner_ffi_mut(), key.inner_ffi_mut()).into_result()?;
+            mbedtls_ssl_set_hs_own_cert(self.into(), chain.inner_ffi_mut(), key.inner_ffi_mut()).into_result()?;
         }
         self.handshake_cert.push(chain);
         self.handshake_pk.push(key);
