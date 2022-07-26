@@ -188,7 +188,7 @@ impl<T: IoCallback> Context<T> {
 impl<T> Context<T> {
     fn handshake(&mut self) -> Result<()> {
         unsafe {
-            mbedtls_ssl_flush_output(self.into()).into_result()?;
+            //xx mbedtls_ssl_flush_output(self.into()).into_result()?;
             mbedtls_ssl_handshake(self.into()).into_result_discard()
         }
     }
@@ -244,12 +244,12 @@ impl<T> Context<T> {
     
     /// Return the minor number of the negotiated TLS version
     pub fn minor_version(&self) -> i32 {
-        self.handle().minor_ver
+        (self.handle().private_tls_version as u32 & 0xff) as i32
     }
 
     /// Return the major number of the negotiated TLS version
     pub fn major_version(&self) -> i32 {
-        self.handle().major_ver
+        (self.handle().private_tls_version as u32 >> 8) as i32
     }
 
     /// Return the number of bytes currently available to read that
@@ -267,6 +267,7 @@ impl<T> Context<T> {
             1 => Version::Tls1_0,
             2 => Version::Tls1_1,
             3 => Version::Tls1_2,
+            4 => Version::Tls1_3,
             _ => unreachable!("unexpected TLS version")
         }
     }
@@ -278,21 +279,21 @@ impl<T> Context<T> {
     /// All assigned ciphersuites are listed by the IANA in
     /// https://www.iana.org/assignments/tls-parameters/tls-parameters.txt
     pub fn ciphersuite(&self) -> Result<u16> {
-        if self.handle().session.is_null() {
+        if self.handle().private_session.is_null() {
             return Err(Error::SslBadInputData);
         }
         
-        Ok(unsafe { self.handle().session.as_ref().unwrap().ciphersuite as u16 })
+        Ok(unsafe { self.handle().private_session.as_ref().unwrap().private_ciphersuite as u16 })
     }
 
     pub fn peer_cert(&self) -> Result<Option<&MbedtlsList<Certificate>>> {
-        if self.handle().session.is_null() {
+        if self.handle().private_session.is_null() {
             return Err(Error::SslBadInputData);
         }
 
         unsafe {
             // We cannot call the peer cert function as we need a pointer to a pointer to create the MbedtlsList, we need something in the heap / cannot use any local variable for that.
-            let peer_cert : &MbedtlsList<Certificate> = UnsafeFrom::from(&((*self.handle().session).peer_cert) as *const *mut mbedtls_x509_crt as *const *const mbedtls_x509_crt).ok_or(Error::SslBadInputData)?;
+            let peer_cert : &MbedtlsList<Certificate> = UnsafeFrom::from(&((*self.handle().private_session).private_peer_cert) as *const *mut mbedtls_x509_crt as *const *const mbedtls_x509_crt).ok_or(Error::SslBadInputData)?;
             Ok(Some(peer_cert))
         }
     }
@@ -365,7 +366,7 @@ impl HandshakeContext {
     }
     
     pub fn set_authmode(&mut self, am: AuthMode) -> Result<()> {
-        if self.inner.handshake as *const _ == ::core::ptr::null() {
+        if self.inner.private_handshake as *const _ == ::core::ptr::null() {
             return Err(Error::SslBadInputData);
         }
         
@@ -379,7 +380,7 @@ impl HandshakeContext {
         crl: Option<Arc<Crl>>,
     ) -> Result<()> {
         // mbedtls_ssl_set_hs_ca_chain does not check for NULL handshake.
-        if self.inner.handshake as *const _ == ::core::ptr::null() {
+        if self.inner.private_handshake as *const _ == ::core::ptr::null() {
             return Err(Error::SslBadInputData);
         }
 
@@ -407,7 +408,7 @@ impl HandshakeContext {
         key: Arc<Pk>,
     ) -> Result<()> {
         // mbedtls_ssl_set_hs_own_cert does not check for NULL handshake.
-        if self.inner.handshake as *const _ == ::core::ptr::null() {
+        if self.inner.private_handshake as *const _ == ::core::ptr::null() {
             return Err(Error::SslBadInputData);
         }
 

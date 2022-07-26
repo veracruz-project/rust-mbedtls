@@ -37,6 +37,7 @@ pub enum Version {
     Tls1_0,
     Tls1_1,
     Tls1_2,
+    Tls1_3,
     #[doc(hidden)]
     __NonExhaustive,
 }
@@ -208,7 +209,7 @@ impl Config {
     setter!(set_transport(t: Transport) = mbedtls_ssl_conf_transport);
     // need bitfield support getter!(authmode() -> AuthMode = field authmode);
     setter!(set_authmode(am: AuthMode) = mbedtls_ssl_conf_authmode);
-    getter!(read_timeout() -> u32 = .read_timeout);
+    getter!(read_timeout() -> u32 = .private_read_timeout);
     setter!(set_read_timeout(t: u32) = mbedtls_ssl_conf_read_timeout);
 
     fn check_c_list<T: Default + Eq>(list: &[T]) {
@@ -233,12 +234,6 @@ impl Config {
         self.protocols = Some(protocols);
         Ok(())
     }
-    
-    pub fn set_ciphersuites_for_version(&mut self, list: Arc<Vec<c_int>>, major: c_int, minor: c_int) {
-        Self::check_c_list(&list);
-        unsafe { mbedtls_ssl_conf_ciphersuites_for_version(self.into(), list.as_ptr(), major, minor) }
-        self.ciphersuites.push(list);
-    }
 
     pub fn set_curves(&mut self, list: Arc<Vec<mbedtls_ecp_group_id>>) {
         Self::check_c_list(&list);
@@ -257,7 +252,8 @@ impl Config {
             Version::Tls1_0 => 1,
             Version::Tls1_1 => 2,
             Version::Tls1_2 => 3,
-            _ => { return Err(Error::SslBadHsProtocolVersion); }
+            Version::Tls1_3 => 4,
+            _ => { return Err(Error::SslBadProtocolVersion); }
         };
 
         unsafe { mbedtls_ssl_conf_min_version(self.into(), 3, minor) };
@@ -270,7 +266,8 @@ impl Config {
             Version::Tls1_0 => 1,
             Version::Tls1_1 => 2,
             Version::Tls1_2 => 3,
-            _ => { return Err(Error::SslBadHsProtocolVersion); }
+            Version::Tls1_3 => 4,
+            _ => { return Err(Error::SslBadProtocolVersion); }
         };
         unsafe { mbedtls_ssl_conf_max_version(self.into(), 3, minor) };
         Ok(())

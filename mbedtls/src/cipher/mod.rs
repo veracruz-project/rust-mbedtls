@@ -286,19 +286,6 @@ impl Cipher<Encryption, Authenticated, AdditionalData> {
             self.change_state(),
         ))
     }
-
-    pub fn encrypt_auth_inplace(
-        mut self,
-        ad: &[u8],
-        data: &mut [u8],
-        tag: &mut [u8],
-    ) -> Result<(usize, Cipher<Encryption, Authenticated, Finished>)> {
-        Ok((
-            self.raw_cipher
-                .encrypt_auth_inplace(ad, data, tag)?,
-            self.change_state(),
-        ))
-    }
 }
 
 impl Cipher<Decryption, Authenticated, AdditionalData> {
@@ -312,19 +299,6 @@ impl Cipher<Decryption, Authenticated, AdditionalData> {
         Ok((
             self.raw_cipher
                 .decrypt_auth(ad, cipher_text_and_tag, plain_text, tag_len)?,
-            self.change_state(),
-        ))
-    }
-
-    pub fn decrypt_auth_inplace(
-        mut self,
-        ad: &[u8],
-        data: &mut [u8],
-        tag: &[u8],
-    ) -> Result<(usize, Cipher<Decryption, Authenticated, Finished>)> {
-        Ok((
-            self.raw_cipher
-                .decrypt_auth_inplace(ad, data, tag)?,
             self.change_state(),
         ))
     }

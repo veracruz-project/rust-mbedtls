@@ -14,8 +14,6 @@ define!(
     #[derive(Copy, Clone, PartialEq, Debug)]
     enum Type {
         None = MBEDTLS_MD_NONE,
-        Md2 = MBEDTLS_MD_MD2,
-        Md4 = MBEDTLS_MD_MD4,
         Md5 = MBEDTLS_MD_MD5,
         Sha1 = MBEDTLS_MD_SHA1,
         Sha224 = MBEDTLS_MD_SHA224,
@@ -30,8 +28,6 @@ impl From<mbedtls_md_type_t> for Type {
     fn from(inner: mbedtls_md_type_t) -> Type {
         match inner {
             MBEDTLS_MD_NONE => Type::None,
-            MBEDTLS_MD_MD2 => Type::Md2,
-            MBEDTLS_MD_MD4 => Type::Md4,
             MBEDTLS_MD_MD5 => Type::Md5,
             MBEDTLS_MD_SHA1 => Type::Sha1,
             MBEDTLS_MD_SHA224 => Type::Sha224,
@@ -100,7 +96,7 @@ impl Md {
 
     pub fn finish(mut self, out: &mut [u8]) -> Result<usize> {
         unsafe {
-            let olen = (*self.inner.md_info).size as usize;
+            let olen = mbedtls_md_get_size(self.inner.private_md_info) as usize;
             if out.len() < olen {
                 return Err(Error::MdBadInputData);
             }
@@ -116,7 +112,7 @@ impl Md {
         };
 
         unsafe {
-            let olen = mdinfo.inner.size as usize;
+            let olen = mbedtls_md_get_size(mdinfo.inner) as usize;
             if out.len() < olen {
                 return Err(Error::MdBadInputData);
             }
@@ -152,7 +148,7 @@ impl Hmac {
 
     pub fn finish(mut self, out: &mut [u8]) -> Result<usize> {
         unsafe {
-            let olen = (*self.ctx.inner.md_info).size as usize;
+            let olen = mbedtls_md_get_size(self.ctx.inner.private_md_info) as usize;
             if out.len() < olen {
                 return Err(Error::MdBadInputData);
             }
@@ -168,7 +164,7 @@ impl Hmac {
         };
 
         unsafe {
-            let olen = md.inner.size as usize;
+            let olen = mbedtls_md_get_size(md.inner) as usize;
             if out.len() < olen {
                 return Err(Error::MdBadInputData);
             }
@@ -218,7 +214,7 @@ impl Hkdf {
 impl Clone for Md {
     fn clone(&self) -> Self {
         fn copy_md(md: &Md) -> Result<Md> {
-            let md_type = unsafe { mbedtls_md_get_type(md.inner.md_info) };
+            let md_type = unsafe { mbedtls_md_get_type(md.inner.private_md_info) };
             let mut m = Md::new(md_type.into())?;
             unsafe { mbedtls_md_clone(&mut m.inner, &md.inner) }.into_result()?;
             Ok(m)

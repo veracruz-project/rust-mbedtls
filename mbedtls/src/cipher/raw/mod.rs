@@ -21,8 +21,6 @@ define!(
         Des = MBEDTLS_CIPHER_ID_DES,
         Des3 = MBEDTLS_CIPHER_ID_3DES,
         Camellia = MBEDTLS_CIPHER_ID_CAMELLIA,
-        Blowfish = MBEDTLS_CIPHER_ID_BLOWFISH,
-        Arc4 = MBEDTLS_CIPHER_ID_ARC4,
         Aria = MBEDTLS_CIPHER_ID_ARIA,
     }
 );
@@ -36,8 +34,6 @@ impl From<mbedtls_cipher_id_t> for CipherId {
             MBEDTLS_CIPHER_ID_DES => CipherId::Des,
             MBEDTLS_CIPHER_ID_3DES => CipherId::Des3,
             MBEDTLS_CIPHER_ID_CAMELLIA => CipherId::Camellia,
-            MBEDTLS_CIPHER_ID_BLOWFISH => CipherId::Blowfish,
-            MBEDTLS_CIPHER_ID_ARC4 => CipherId::Arc4,
             MBEDTLS_CIPHER_ID_ARIA => CipherId::Aria,
             // This should be replaced with TryFrom once it is stable.
             _ => panic!("Invalid cipher_id_t"),
@@ -124,11 +120,6 @@ define!(
         DesEdeCbc = MBEDTLS_CIPHER_DES_EDE_CBC,
         DesEde3Ecb = MBEDTLS_CIPHER_DES_EDE3_ECB,
         DesEde3Cbc = MBEDTLS_CIPHER_DES_EDE3_CBC,
-        BlowfishEcb = MBEDTLS_CIPHER_BLOWFISH_ECB,
-        BlowfishCbc = MBEDTLS_CIPHER_BLOWFISH_CBC,
-        BlowfishCfb64 = MBEDTLS_CIPHER_BLOWFISH_CFB64,
-        BlowfishCtr = MBEDTLS_CIPHER_BLOWFISH_CTR,
-        Arcfour128 = MBEDTLS_CIPHER_ARC4_128,
         Aes128Ccm = MBEDTLS_CIPHER_AES_128_CCM,
         Aes192Ccm = MBEDTLS_CIPHER_AES_192_CCM,
         Aes256Ccm = MBEDTLS_CIPHER_AES_256_CCM,
@@ -227,7 +218,7 @@ impl Cipher {
 
     pub fn update(&mut self, indata: &[u8], outdata: &mut [u8]) -> Result<usize> {
         // Check that minimum required space is available in outdata buffer
-        let reqd_size = if unsafe { *self.inner.cipher_info }.mode == MBEDTLS_MODE_ECB {
+        let reqd_size = if unsafe { *self.inner.private_cipher_info }.private_mode == MBEDTLS_MODE_ECB {
             self.block_size()
         } else {
             indata.len() + self.block_size()
@@ -276,23 +267,23 @@ impl Cipher {
 
     // Utility function to get block size for the selected / setup cipher_info
     pub fn block_size(&self) -> usize {
-        unsafe { (*self.inner.cipher_info).block_size as usize }
+        unsafe { (*self.inner.private_cipher_info).private_block_size as usize }
     }
 
     // Utility function to get IV size for the selected / setup cipher_info
     pub fn iv_size(&self) -> usize {
-        unsafe { (*self.inner.cipher_info).iv_size as usize }
+        unsafe { (*self.inner.private_cipher_info).private_iv_size as usize }
     }
 
     pub fn cipher_mode(&self) -> CipherMode {
-        unsafe { (*self.inner.cipher_info).mode.into() }
+        unsafe { (*self.inner.private_cipher_info).private_mode.into() }
     }
 
     // Utility function to get mdoe for the selected / setup cipher_info
     pub fn is_authenticated(&self) -> bool {
         unsafe {
-            if (*self.inner.cipher_info).mode == MBEDTLS_MODE_GCM
-                || (*self.inner.cipher_info).mode == MBEDTLS_MODE_CCM
+            if (*self.inner.private_cipher_info).private_mode == MBEDTLS_MODE_GCM
+                || (*self.inner.private_cipher_info).private_mode == MBEDTLS_MODE_CCM
             {
                 return true;
             } else {
@@ -328,8 +319,8 @@ impl Cipher {
             return Err(Error::CipherBadInputData);
         }
 
-        let iv = self.inner.iv;
-        let iv_len = self.inner.iv_size;
+        let iv = self.inner.private_iv;
+        let iv_len = self.inner.private_iv_size;
         let mut cipher_len = cipher_and_tag.len();
         unsafe {
             mbedtls_cipher_auth_encrypt_ext(
@@ -366,8 +357,8 @@ impl Cipher {
             return Err(Error::CipherBadInputData);
         }
 
-        let iv = self.inner.iv;
-        let iv_len = self.inner.iv_size;
+        let iv = self.inner.private_iv;
+        let iv_len = self.inner.private_iv_size;
         let mut plain_len = plain.len();
         unsafe {
             mbedtls_cipher_auth_decrypt_ext(
@@ -389,66 +380,6 @@ impl Cipher {
         Ok(plain_len)
     }
 
-    pub fn encrypt_auth_inplace(
-        &mut self,
-        ad: &[u8],
-        data: &mut [u8],
-        tag: &mut [u8],
-    ) -> Result<usize> {
-
-        let iv = self.inner.iv;
-        let iv_len = self.inner.iv_size;
-        let mut olen = data.len();
-        unsafe {
-            mbedtls_cipher_auth_encrypt(
-                &mut self.inner,
-                iv.as_ptr(),
-                iv_len,
-                ad.as_ptr(),
-                ad.len(),
-                data.as_ptr(),
-                data.len(),
-                data.as_mut_ptr(),
-                &mut olen,
-                tag.as_mut_ptr(),
-                tag.len(),
-            )
-            .into_result()?
-        };
-
-        Ok(olen)
-    }
-
-    pub fn decrypt_auth_inplace(
-        &mut self,
-        ad: &[u8],
-        data: &mut [u8],
-        tag: &[u8],
-    ) -> Result<usize> {
-
-        let iv = self.inner.iv;
-        let iv_len = self.inner.iv_size;
-        let mut plain_len = data.len();
-        unsafe {
-            mbedtls_cipher_auth_decrypt(
-                &mut self.inner,
-                iv.as_ptr(),
-                iv_len,
-                ad.as_ptr(),
-                ad.len(),
-                data.as_ptr(),
-                data.len(),
-                data.as_mut_ptr(),
-                &mut plain_len,
-                tag.as_ptr(),
-                tag.len(),
-            )
-            .into_result()?
-        };
-
-        Ok(plain_len)
-    }
-
     fn do_crypto(&mut self, indata: &[u8], outdata: &mut [u8]) -> Result<usize> {
         self.reset()?;
 
@@ -457,7 +388,7 @@ impl Cipher {
         // return an empty slice, it doesn't panic.
         let mut total_len = 0;
 
-        if unsafe { *self.inner.cipher_info }.mode == MBEDTLS_MODE_ECB {
+        if unsafe { *self.inner.private_cipher_info }.private_mode == MBEDTLS_MODE_ECB {
             // ECB mode requires single-block updates
             for chunk in indata.chunks(self.block_size()) {
                 let len = self.update(chunk, &mut outdata[total_len..])?;
@@ -478,7 +409,7 @@ impl Cipher {
         }
         self.reset()?;
         unsafe {
-            mbedtls_cipher_cmac(&*self.inner.cipher_info, key.as_ptr(), (key.len() * 8) as _, data.as_ptr(), data.len(), 
+            mbedtls_cipher_cmac(&*self.inner.private_cipher_info, key.as_ptr(), (key.len() * 8) as _, data.as_ptr(), data.len(),
                         outdata.as_mut_ptr()).into_result()?;
         }
         Ok(())

@@ -122,6 +122,7 @@ impl super::BuildConfig {
             .header_contents("bindgen-input.h", &input)
             .allowlist_function("^(?i)mbedtls_.*")
             .allowlist_type("^(?i)mbedtls_.*")
+            .allowlist_type("^psa_.*")
             .allowlist_var("^(?i)mbedtls_.*")
             .allowlist_recursively(false)
             .blocklist_type("^mbedtls_time_t$")

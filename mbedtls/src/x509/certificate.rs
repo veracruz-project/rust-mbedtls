@@ -216,11 +216,11 @@ impl Certificate {
     }
 
     pub fn signature(&self) -> Result<Vec<u8>> {
-        Ok(x509_buf_to_vec(&self.inner.sig))
+        Ok(x509_buf_to_vec(&self.inner.private_sig))
     }
 
     pub fn digest_type(&self) -> MdType {
-        MdType::from(self.inner.sig_md)
+        MdType::from(self.inner.private_sig_md)
     }
 
     fn verify_ex<F>(
