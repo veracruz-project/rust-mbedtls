@@ -215,7 +215,7 @@ impl Time {
         }
     }
 
-    fn to_x509_time(&self) -> [u8; 15] {
+    pub fn to_x509_time(&self) -> [u8; 15] {
         let mut writer = TimeWriter {
             buf: [0; 15],
             idx: 0,
