@@ -22,9 +22,6 @@ libz-sys = { version = "1.0.0", optional = true }
 # deprecated dependency, this don't do anything anymore, but still needed to
 # provide the `libc` feature, can be removed on major version bump
 libc = { version = "0.2.0", optional = true }
-# We are not really using psa-crypto-sys but we are using the C
-# libraries that psa-crypto-sys builds and uses.
-psa-crypto-sys = { path = "../../rust-psa-crypto/psa-crypto-sys" }
 
 [target.'cfg(unix)'.dependencies]
 libc = { version = "0.2.0" }
