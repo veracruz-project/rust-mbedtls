@@ -121,6 +121,7 @@ impl super::BuildConfig {
             .clang_args(cc.get_compiler().args().iter().map(|arg| arg.to_str().unwrap()))
             .header_contents("bindgen-input.h", &input)
             .allowlist_function("^(?i)mbedtls_.*")
+            .allowlist_function("psa_crypto_init")
             .allowlist_type("^(?i)mbedtls_.*")
             .allowlist_type("^psa_.*")
             .allowlist_var("^(?i)mbedtls_.*")

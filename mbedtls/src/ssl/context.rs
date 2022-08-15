@@ -155,6 +155,9 @@ impl<T> Context<T> {
 impl<T: IoCallback> Context<T> {
     pub fn establish(&mut self, io: T, hostname: Option<&str>) -> Result<()> {
         unsafe {
+            if mbedtls_sys::psa_crypto_init() != 0 {
+                panic!("psa_crypto_init failed");
+            }
             let mut io = Box::new(io);
             mbedtls_ssl_session_reset(self.into()).into_result()?;
             self.set_hostname(hostname)?;
