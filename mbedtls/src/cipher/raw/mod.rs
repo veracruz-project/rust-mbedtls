@@ -205,6 +205,8 @@ impl Cipher {
 
     // Cipher set IV - should be called after setup
     pub fn set_iv(&mut self, iv: &[u8]) -> Result<()> {
+        // Set this ourselves as mbedtls_cipher_set_iv might not set it:
+        self.inner.private_iv_size = iv.len();
         unsafe { mbedtls_cipher_set_iv(&mut self.inner, iv.as_ptr(), iv.len()).into_result_discard() }
     }
 
