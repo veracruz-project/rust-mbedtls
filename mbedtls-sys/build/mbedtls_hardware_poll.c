@@ -11,23 +11,19 @@
  */
 
 #include "psa/crypto.h"
-
-#if 0
-// This is what one would normally do to get the prototype for getrandom,
-// but it does not work with version 1.1.19-1 of musl-tools, which comes
-// with Ubuntu 18.04 and is currently used for the Nitro build of Veracruz.
-#include <sys/random.h>
-#else
-// This currently works for all targets.
-#include <sys/types.h>
-ssize_t getrandom(void *buf, size_t buflen, unsigned int flags);
-#endif
+#include <stdio.h>
 
 int mbedtls_hardware_poll(void *data,
                           unsigned char *output, size_t len, size_t *olen)
 {
     (void)data;
-    ssize_t ret = getrandom(output, len, 0);
+
+    // Workaround for Nitro machines affected by entropy shortage
+    // TODO: Use Veracruz's platform services instead
+    FILE *f = fopen("/dev/urandom", "r");
+    ssize_t ret = fread(output, len, 1, f);
+    fclose(f);
+
     if (ret == -1)
         return PSA_ERROR_GENERIC_ERROR;
     *olen = ret;
