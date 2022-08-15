@@ -99,13 +99,15 @@ impl BuildConfig {
                 f.expect("DirEntry failed").path().display()
             );
         }
-        // Veracruz config file:
-        println!(
-            "cargo:rerun-if-changed={}",
-            self.mbedtls_src
-                .join(Path::new("..").join("build").join("veracruz-config.h"))
-                .display()
-        );
+        // Veracruz additions:
+        for file in &["mbedtls_hardware_poll.c", "veracruz-config.h"] {
+            println!(
+                "cargo:rerun-if-changed={}",
+                self.mbedtls_src
+                    .join(Path::new("..").join("build").join(file))
+                    .display()
+            );
+        }
     }
 
     fn new() -> Self {
@@ -132,10 +134,36 @@ impl BuildConfig {
     }
 }
 
+// The library is called "libshim.a" because in rust-psa-crypto
+// it contained linkable versions of functions that may be declared
+// static inline. It now contains only mbedtls_hardware_poll but
+// it is easier and safer not to change the name.
+fn veracruz_build_shim_library() {
+    let out_dir = env::var("OUT_DIR").unwrap();
+
+    // Build library.
+    cc::Build::new()
+        .include(&out_dir)
+        .define("MBEDTLS_CONFIG_FILE", "<veracruz-config.h>")
+        .include("build") // for "veracruz-config.h"
+        .include("vendor/include") // for "psa/crypto.h"
+        .file("build/mbedtls_hardware_poll.c")
+        .warnings(true)
+        .flag("-Werror")
+        .opt_level(2)
+        .try_compile("libshim.a")
+        .unwrap();
+
+    // Link library.
+    println!("cargo:rustc-link-search=native={}", out_dir);
+    println!("cargo:rustc-link-lib=static=shim");
+}
+
 fn main() {
     let cfg = BuildConfig::new();
     cfg.create_config_h();
     cfg.print_rerun_files();
     cfg.cmake();
     cfg.bindgen();
+    veracruz_build_shim_library();
 }
