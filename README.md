@@ -23,6 +23,9 @@ This is a list of the Cargo features available for mbedtls. Features in
 * *debug* Enable debug printing to stdout. You need to configure the debug
           threshold at runtime.
 * *dsa* Enable support for DSA signatures
+* *fake_random* Instead of calling `getrandom()` return all zeroes. This is a
+                temporary work-around for Veracruz. (Upstream `rust-mbedtls`
+                does not have the call to `getrandom()` in the first place.)
 * *force_aesni_support* MbedTLS normally uses runtime detection of AES-NI
                         support. With this feature, always use AES-NI. This
                         will result in undefined instruction exceptions on

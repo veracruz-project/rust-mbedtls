@@ -150,6 +150,14 @@ fn veracruz_build_shim_library() {
     // Build library.
     cc::Build::new()
         .include(&out_dir)
+        .define(
+            "FAKE_RANDOM",
+            if FEATURES.have_feature("fake_random") {
+                "1"
+            } else {
+                "0"
+            },
+        )
         .define("MBEDTLS_CONFIG_FILE", "<veracruz-config.h>")
         .include("build") // for "veracruz-config.h"
         .include("vendor/include") // for "psa/crypto.h"
