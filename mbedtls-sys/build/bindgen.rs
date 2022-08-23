@@ -94,9 +94,11 @@ impl super::BuildConfig {
                         .strip_suffix("\r\n")
                         .or(path.strip_suffix("\n"))
                         .unwrap_or(&path);
-                    cc.flag(&format!("--sysroot={}", trimmed_path));
-                    cc.flag("--no-standard-includes");
-                    cc.flag(&format!("-I{}/include", trimmed_path));
+                    if trimmed_path.len() > 1 {
+                        cc.flag(&format!("--sysroot={}", trimmed_path));
+                        cc.flag("--no-standard-includes");
+                        cc.flag(&format!("-I{}/include", trimmed_path));
+                    }
                 }
                 _ => {} // skip toolchains without a configured sysroot
             };
