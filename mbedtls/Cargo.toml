@@ -68,7 +68,6 @@ padlock = ["mbedtls-sys-auto/padlock"]
 dsa = ["std", "yasna", "num-bigint", "bit-vec"]
 pkcs12 = ["std", "yasna"]
 pkcs12_rc2 = ["pkcs12", "rc2", "block-modes"]
-fake_random = ["mbedtls-sys-auto/fake_random"]
 
 [[example]]
 name = "client"
