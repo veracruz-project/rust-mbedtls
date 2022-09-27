@@ -10,13 +10,10 @@
  *
  */
 
-#include "psa/crypto.h"
-
-#if MONITOR_GETRANDOM
 #include "mbedtls/platform.h"
+#include "psa/crypto.h"
 #include <signal.h>
 #include <unistd.h>
-#endif
 
 #if 0
 // This is what one would normally do to get the prototype for getrandom,
@@ -29,7 +26,6 @@
 ssize_t getrandom(void *buf, size_t buflen, unsigned int flags);
 #endif
 
-#if MONITOR_GETRANDOM
 // Handle SIGALARM signal.
 void handle_sigalarm(int signo)
 {
@@ -37,14 +33,12 @@ void handle_sigalarm(int signo)
     mbedtls_printf("getrandom() could not return before the timeout. The entropy bug might be back to haunt us! Aborting\n");
     mbedtls_exit(1);
 }
-#endif
 
 int mbedtls_hardware_poll(void *data,
                           unsigned char *output, size_t len, size_t *olen)
 {
     (void)data;
 
-#if MONITOR_GETRANDOM
     // Configure a one-shot alarm that terminates the process with an error
     // message if `getrandom()` doesn't return pronto.
     // Cf. https://github.com/veracruz-project/veracruz/issues/507
@@ -56,9 +50,7 @@ int mbedtls_hardware_poll(void *data,
     alarm(10);
 #endif
     ssize_t ret = getrandom(output, len, 0);
-#if MONITOR_GETRANDOM
     alarm(0);
-#endif
 
     if (ret == -1)
         return PSA_ERROR_GENERIC_ERROR;

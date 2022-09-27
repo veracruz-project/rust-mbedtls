@@ -23,9 +23,6 @@ This is a list of the Cargo features available for mbedtls. Features in
 * *debug* Enable debug printing to stdout. You need to configure the debug
           threshold at runtime.
 * *dsa* Enable support for DSA signatures
-* *monitor_getrandom* Exit with an error message if `getrandom()` times out.
-                      This is a temporary mechanism to detect entropy bugs on
-                      Nitro.
 * *force_aesni_support* MbedTLS normally uses runtime detection of AES-NI
                         support. With this feature, always use AES-NI. This
                         will result in undefined instruction exceptions on
