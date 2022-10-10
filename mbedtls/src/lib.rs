@@ -156,7 +156,7 @@ cfg_if::cfg_if! {
 /// function.
 #[cfg(feature = "debug")]
 pub unsafe fn set_global_debug_threshold(threshold: i32) {
-    mbedtls_sys::debug_set_threshold(threshold);
+    mbedtls_sys::mbedtls_debug_set_threshold(threshold);
 }
 
 #[cfg(test)]

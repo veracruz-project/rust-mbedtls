@@ -85,9 +85,9 @@ impl Ecdh {
 
         let mut ret = Self::init();
         unsafe {
-            mbedtls_ecp_group_copy(&mut ret.inner.private_ctx.private_mbed_ecdh.private_grp, &private.inner.private_grp).into_result()?;
-            mbedtls_mpi_copy(&mut ret.inner.private_ctx.private_mbed_ecdh.private_d, &private.inner.private_d).into_result()?;
-            mbedtls_ecp_copy(&mut ret.inner.private_ctx.private_mbed_ecdh.private_Qp, &public.inner.private_Q).into_result()?;
+            mbedtls_ecp_group_copy(&mut ret.inner.private_grp, &private.inner.private_grp).into_result()?;
+            mbedtls_mpi_copy(&mut ret.inner.private_d, &private.inner.private_d).into_result()?;
+            mbedtls_ecp_copy(&mut ret.inner.private_Qp, &public.inner.private_Q).into_result()?;
         }
         Ok(ret)
     }
@@ -138,11 +138,12 @@ hXzA375dfGH6yIsRgRveMo6KDRK/AanSBLUj
             0xf7, 0xce, 0x3c, 0x78, 0x31, 0x24, 0xf6, 0xd5, 0x1c, 0xd0,
         ];
 
-        let mut k_pr = Pk::from_private_key(PRIVATE_P192, None).unwrap();
+        let mut rng = crate::test_support::rand::test_rng();
+        let mut k_pr = Pk::from_private_key(&mut rng, PRIVATE_P192, None).unwrap();
         let k_pb = Pk::from_public_key(PUBLIC_P192).unwrap();
         let mut out = [0; 192 / 8];
         let len = k_pr
-            .agree(&k_pb, &mut out, &mut crate::test_support::rand::test_rng())
+            .agree(&k_pb, &mut out, &mut rng)
             .unwrap();
         assert_eq!(len, DH_P192.len());
         assert_eq!(out, DH_P192);

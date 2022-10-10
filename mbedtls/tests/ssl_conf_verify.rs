@@ -24,6 +24,7 @@ use mbedtls::Result as TlsResult;
 mod support;
 use support::entropy::entropy_new;
 use support::keys;
+use support::rand::test_rng;
 use std::sync::Arc;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -77,7 +78,8 @@ fn server(conn: TcpStream) -> TlsResult<()> {
     let entropy = entropy_new();
     let rng = Arc::new(CtrDrbg::new(Arc::new(entropy), None)?);
     let cert = Arc::new(Certificate::from_pem_multiple(keys::PEM_CERT.as_bytes())?);
-    let key = Arc::new(Pk::from_private_key(keys::PEM_KEY.as_bytes(), None)?);
+    let mut rng2 = test_rng();
+    let key = Arc::new(Pk::from_private_key(&mut rng2, keys::PEM_KEY.as_bytes(), None)?);
     let mut config = Config::new(Endpoint::Server, Transport::Stream, Preset::Default);
     config.set_rng(rng);
     config.push_cert(cert, key)?;

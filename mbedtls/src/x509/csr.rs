@@ -218,8 +218,9 @@ mod tests {
 
     impl Test {
         fn new() -> Self {
+            let mut rng = crate::rng::CtrDrbg::new(std::sync::Arc::new(crate::rng::OsEntropy::new()), None).unwrap();
             Test {
-                key: Pk::from_private_key(crate::test_support::keys::PEM_SELF_SIGNED_KEY, None).unwrap(),
+                key: Pk::from_private_key(&mut rng, crate::test_support::keys::PEM_SELF_SIGNED_KEY, None).unwrap(),
             }
         }
 

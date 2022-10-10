@@ -95,7 +95,11 @@ impl<Op: Operation, T: Type> Serialize for Cipher<Op, T, CipherData> {
 unsafe fn serialize_raw_cipher(mut cipher_context: cipher_context_t)
     -> Result<SavedRawCipher, &'static str> {
 
-    let cipher_id = 0; //xx (*(*cipher_context.private_cipher_info).private_base).cipher;
+    // FIXME: A terrible hack!
+    // cipher_id is the first member of struct mbedtls_cipher_base_t,
+    // which is defined in library/cipher_wrap.h so not available
+    // through bindgen.
+    let cipher_id = *(&(*(*cipher_context.private_cipher_info).private_base) as *const _ as *const u32);
     let cipher_mode = (*cipher_context.private_cipher_info).private_mode;
     let key_bit_len = (*cipher_context.private_cipher_info).private_key_bitlen;
 

@@ -755,9 +755,10 @@ mod tests {
 
     impl Test {
         fn new() -> Self {
+            let mut rng = crate::rng::CtrDrbg::new(std::sync::Arc::new(crate::rng::OsEntropy::new()), None).unwrap();
             Test {
-                key1: Pk::from_private_key(crate::test_support::keys::PEM_SELF_SIGNED_KEY, None).unwrap(),
-                key2: Pk::from_private_key(crate::test_support::keys::PEM_SELF_SIGNED_KEY, None).unwrap(),
+                key1: Pk::from_private_key(&mut rng, crate::test_support::keys::PEM_SELF_SIGNED_KEY, None).unwrap(),
+                key2: Pk::from_private_key(&mut rng, crate::test_support::keys::PEM_SELF_SIGNED_KEY, None).unwrap(),
             }
         }
 
@@ -1344,8 +1345,8 @@ cYp0bH/RcPTC0Z+ZaqSWMtfxRrk63MJQF9EXpDCdvQRcTMD9D85DJrMKn8aumq0M
 
     #[test]
     fn unsafefrom_ptr_checks_test() {
-        let mut ptr : *mut x509_crt = ::core::ptr::null_mut() as *mut x509_crt;
-        let ptr_test : *mut *mut x509_crt = &mut ptr as *mut *mut x509_crt;
+        let mut ptr : *mut mbedtls_x509_crt = ::core::ptr::null_mut() as *mut mbedtls_x509_crt;
+        let ptr_test : *mut *mut mbedtls_x509_crt = &mut ptr as *mut *mut mbedtls_x509_crt;
 
         let option = unsafe {
             <&mut Option<MbedtlsBox<_>> as UnsafeFrom<_>>::from(ptr_test).unwrap()
@@ -1356,7 +1357,7 @@ cYp0bH/RcPTC0Z+ZaqSWMtfxRrk63MJQF9EXpDCdvQRcTMD9D85DJrMKn8aumq0M
         assert!(cert_list.is_none());
 
 
-        let ptr_test : *mut *mut x509_crt = ::core::ptr::null_mut() as *mut *mut x509_crt;
+        let ptr_test : *mut *mut mbedtls_x509_crt = ::core::ptr::null_mut() as *mut *mut mbedtls_x509_crt;
         let cert_list : Option<&mut MbedtlsList<Certificate>> = unsafe { UnsafeFrom::from(ptr_test) };
         assert!(cert_list.is_none());
 
@@ -1409,10 +1410,10 @@ cYp0bH/RcPTC0Z+ZaqSWMtfxRrk63MJQF9EXpDCdvQRcTMD9D85DJrMKn8aumq0M
 
         let mut chain = MbedtlsList::<Certificate>::new();
 
-        let ptr : *const x509_crt = (&chain).into();
+        let ptr : *const mbedtls_x509_crt = (&chain).into();
         assert_eq!(ptr, ::core::ptr::null());
 
-        let ptr : *mut x509_crt = (&mut chain).into();
+        let ptr : *mut mbedtls_x509_crt = (&mut chain).into();
         assert_eq!(ptr, ::core::ptr::null_mut());
 
         let c1 = Certificate::from_pem(C_LEAF.as_bytes()).unwrap();
@@ -1421,13 +1422,13 @@ cYp0bH/RcPTC0Z+ZaqSWMtfxRrk63MJQF9EXpDCdvQRcTMD9D85DJrMKn8aumq0M
         let c1_info = format!("{:?}", *c1);
         chain.push(c1.clone());
 
-        let ptr : *const x509_crt = (&chain).into();
+        let ptr : *const mbedtls_x509_crt = (&chain).into();
         assert_ne!(ptr, ::core::ptr::null());
 
         let cert : &Certificate = unsafe { UnsafeFrom::from(ptr).unwrap() };
         assert_eq!(c1_info, format!("{:?}", cert));
         
-        let ptr : *mut x509_crt = (&mut chain).into();
+        let ptr : *mut mbedtls_x509_crt = (&mut chain).into();
         assert_ne!(ptr, ::core::ptr::null_mut());
 
         let cert : &mut Certificate = unsafe { UnsafeFrom::from(ptr).unwrap() };

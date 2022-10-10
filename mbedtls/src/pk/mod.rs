@@ -114,8 +114,6 @@ impl CustomPkContext {
     }
 }
 
-extern "C" { static CUSTOM_PK_INFO: mbedtls_pk_info_t; }
-
 // If this changes then certificate.rs unsafe code in public_key needs to also change.
 define!(
     #[c_ty(mbedtls_pk_context)]
@@ -297,29 +295,6 @@ impl Pk {
             let ctx = ret.inner.private_pk_ctx as *mut mbedtls_ecp_keypair;
             (*ctx).private_grp = curve.into_inner();
             (*ctx).private_Q = public_point.into_inner();
-        }
-        Ok(ret)
-    }
-
-    pub fn public_custom_algo(algo_id: &[u64], pk: &[u8]) -> Result<Pk> {
-        let mut ret = Self::init();
-        unsafe {
-            mbedtls_pk_setup(&mut ret.inner, &CUSTOM_PK_INFO).into_result()?;
-            let ctx = ret.inner.private_pk_ctx as *mut CustomPkContext;
-            (*ctx).algo_id = algo_id.to_owned();
-            (*ctx).pk = pk.to_owned();
-        }
-        Ok(ret)
-    }
-
-    pub fn private_custom_algo(algo_id: &[u64], pk: &[u8], sk: &[u8]) -> Result<Pk> {
-        let mut ret = Self::init();
-        unsafe {
-            mbedtls_pk_setup(&mut ret.inner, &CUSTOM_PK_INFO).into_result()?;
-            let ctx = ret.inner.private_pk_ctx as *mut CustomPkContext;
-            (*ctx).algo_id = algo_id.to_owned();
-            (*ctx).pk = pk.to_owned();
-            (*ctx).sk = sk.to_owned();
         }
         Ok(ret)
     }
@@ -1037,7 +1012,6 @@ impl Pk {
 mod tests {
     use super::*;
     use crate::hash::{Type, MdInfo};
-    use crate::pk::Type as PkType;
 
     // This is test data that must match library output *exactly*
     const TEST_PEM: &'static str = "-----BEGIN RSA PRIVATE KEY-----
@@ -1152,6 +1126,13 @@ iy6KC991zzvaWY/Ys+q/84Afqa+0qJKQnPuy/7F5GkVdQA/lfbhi
         0xe9, 0xde, 0xb9, 0x58, 0x36, 0x5f,
     ];
 
+    fn rng() -> crate::rng::CtrDrbg {
+        crate::rng::CtrDrbg::new(
+            std::sync::Arc::new(crate::rng::OsEntropy::new()),
+            None,
+        ).unwrap()
+    }
+
     #[test]
     fn generate_rsa() {
         let mut pk =
@@ -1218,7 +1199,7 @@ iy6KC991zzvaWY/Ys+q/84Afqa+0qJKQnPuy/7F5GkVdQA/lfbhi
 
     #[test]
     fn parse_write_pem() {
-        let parsed = Pk::from_private_key(TEST_PEM.as_bytes(), None)
+        let parsed = Pk::from_private_key(&mut rng(), TEST_PEM.as_bytes(), None)
             .unwrap()
             .write_private_pem_string()
             .unwrap();
@@ -1227,7 +1208,7 @@ iy6KC991zzvaWY/Ys+q/84Afqa+0qJKQnPuy/7F5GkVdQA/lfbhi
 
     #[test]
     fn parse_write_der() {
-        let parsed = Pk::from_private_key(TEST_DER, None)
+        let parsed = Pk::from_private_key(&mut rng(), TEST_DER, None)
             .unwrap()
             .write_private_der_vec()
             .unwrap();
@@ -1337,7 +1318,7 @@ iy6KC991zzvaWY/Ys+q/84Afqa+0qJKQnPuy/7F5GkVdQA/lfbhi
 
     #[test]
     fn encrypt_v15_oaep() {
-        let mut pk = Pk::from_private_key(TEST_DER, None).unwrap();
+        let mut pk = Pk::from_private_key(&mut rng(), TEST_DER, None).unwrap();
         let mut cipher1 = [0u8; 2048 / 8];
         let mut cipher2 = [0u8; 2048 / 8];
         assert_eq!(
@@ -1360,7 +1341,7 @@ iy6KC991zzvaWY/Ys+q/84Afqa+0qJKQnPuy/7F5GkVdQA/lfbhi
 
     #[test]
     fn encrypt_raw_decrypt_with_pkcs1_v15() {
-        let mut pk = Pk::from_private_key(TEST_DER, None).unwrap();
+        let mut pk = Pk::from_private_key(&mut rng(), TEST_DER, None).unwrap();
         let mut cipher = [0u8; 2048 / 8];
         let mut rng = crate::test_support::rand::test_rng();
         pk.set_options(Options::Rsa {
@@ -1387,7 +1368,7 @@ iy6KC991zzvaWY/Ys+q/84Afqa+0qJKQnPuy/7F5GkVdQA/lfbhi
 
     #[test]
     fn rsa_encrypt_with_no_padding() {
-        let mut pk = Pk::from_private_key(TEST_DER, None).unwrap();
+        let mut pk = Pk::from_private_key(&mut rng(), TEST_DER, None).unwrap();
         let mut cipher = [0u8; 2048 / 8];
         // set raw decryption padding mode
         pk.set_options(Options::Rsa {
@@ -1402,7 +1383,7 @@ iy6KC991zzvaWY/Ys+q/84Afqa+0qJKQnPuy/7F5GkVdQA/lfbhi
 
     #[test]
     fn rsa_encrypt_decrypt_with_label() {
-        let mut pk = Pk::from_private_key(TEST_DER, None).unwrap();
+        let mut pk = Pk::from_private_key(&mut rng(), TEST_DER, None).unwrap();
         let mut cipher = [0u8; 2048 / 8];
         // set raw decryption padding mode
         pk.set_options(Options::Rsa {
@@ -1471,7 +1452,7 @@ iy6KC991zzvaWY/Ys+q/84Afqa+0qJKQnPuy/7F5GkVdQA/lfbhi
 
     #[test]
     fn rsa_params() {
-        let pk = Pk::from_private_key(TEST_DER, None).unwrap();
+        let pk = Pk::from_private_key(&mut rng(), TEST_DER, None).unwrap();
 
         let n = pk.rsa_public_modulus().unwrap();
         let d = pk.rsa_private_exponent().unwrap();
@@ -1490,28 +1471,6 @@ iy6KC991zzvaWY/Ys+q/84Afqa+0qJKQnPuy/7F5GkVdQA/lfbhi
         assert_eq!(&d % &p1, Ok(dp));
         assert_eq!(&d % &q1, Ok(dq));
         assert_eq!((&qp * &q).unwrap().modulo(&p), Ok(one));
-    }
-
-    #[test]
-    fn custom_pk_obj() {
-        let pk = Pk::public_custom_algo(&[8, 0, 2], &[1, 2, 3, 4]).unwrap();
-        assert_eq!(pk.pk_type(), PkType::Custom);
-        assert_eq!(pk.custom_algo_id().unwrap(), &[8, 0, 2]);
-        assert_eq!(pk.custom_public_key().unwrap(), &[1, 2, 3, 4]);
-        assert!(pk.custom_private_key().is_err());
-        assert!(!pk.can_do(PkType::Rsa));
-
-        let pk = Pk::private_custom_algo(&[23], &[1, 2, 3, 4], &[9, 1, 1]).unwrap();
-        assert_eq!(pk.pk_type(), PkType::Custom);
-        assert_eq!(pk.custom_algo_id().unwrap(), &[23]);
-        assert_eq!(pk.custom_public_key().unwrap(), &[1, 2, 3, 4]);
-        assert_eq!(pk.custom_private_key().unwrap(), &[9, 1, 1]);
-
-        // Verify custom_x functions don't crash if called on some other type
-        let pk = Pk::from_private_key(TEST_DER, None).unwrap();
-        assert!(pk.custom_algo_id().is_err());
-        assert!(pk.custom_public_key().is_err());
-        assert!(pk.custom_private_key().is_err());
     }
 
 }

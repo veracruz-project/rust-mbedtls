@@ -47,7 +47,6 @@ rand = "0.4.0"
 serde_cbor = "0.10"
 hex = "0.3"
 matches = "0.1.8"
-hyper = { version = "0.14.12", default-features = false }
 
 [build-dependencies]
 cc = "1.0"
@@ -88,8 +87,4 @@ required-features = ["std"]
 
 [[test]]
 name = "ssl_conf_verify"
-required-features = ["std"]
-
-[[test]]
-name = "hyper"
 required-features = ["std"]
