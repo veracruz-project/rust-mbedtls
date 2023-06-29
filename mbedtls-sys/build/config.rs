@@ -381,6 +381,8 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_PLATFORM_ZEROIZE_ALT",                      Undefined),
     ("MBEDTLS_PLATFORM_GMTIME_R_ALT",                     Undefined),
     ("MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED",              Undefined),
+    #[cfg(feature = "icecap")]
+    ("MBEDTLS_ICECAP",                                    Defined),
 ];
 
 pub fn default_defines() -> HashMap<&'static str, Macro> {

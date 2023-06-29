@@ -106,6 +106,14 @@ impl BuildConfig {
             cflags.push("-fno-stack-protector".into());
         }
 
+        if cfg!(feature = "icecap") {
+            // We need this for Veracruz on IceCap. Otherwise we get errors like:
+            // rust-lld: error: undefined symbol: __memcpy_chk
+            cflags.push("-U_FORTIFY_SOURCE".into());
+            cflags.push("-D_FORTIFY_SOURCE=0".into());
+            cflags.push("-D__USE_FORTIFY_LEVEL=0".into());
+        }
+
         BuildConfig {
             config_h,
             out_dir,

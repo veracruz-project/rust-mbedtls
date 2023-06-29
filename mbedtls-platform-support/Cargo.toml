@@ -25,6 +25,7 @@ chrono = { version = "0.4", optional = true }
 once_cell = "1.17.1"
 
 [target.x86_64-fortanix-unknown-sgx.dependencies]
+# Veracruz: Remove dependency on "time" crate:
 chrono = { version = "0.4.19", default-features = false, features = ["clock", "std"] }
 zeroize = { version = "1.6.0", default-features = false }
 
@@ -44,3 +45,4 @@ force_aesni_support = ["mbedtls-sys-auto/custom_has_support", "mbedtls-sys-auto/
 aesni = ["mbedtls-sys-auto/aesni"]
 tls13 = ["mbedtls-sys-auto/tls13"]
 rdrand = []
+icecap = []

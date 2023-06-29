@@ -31,6 +31,11 @@ fn main() {
             .define("_FORTIFY_SOURCE", Some("0"))
             .flag("-ffreestanding");
     }
+    if cfg!(feature = "icecap") {
+        b.flag("-U_FORTIFY_SOURCE")
+            .define("_FORTIFY_SOURCE", Some("0"))
+            .define("__USE_FORTIFY_LEVEL", Some("0"));
+    }
     b.compile("librust-mbedtls-platform-support.a");
     // Force correct link order for mbedtls_printf
     println!("cargo:rustc-link-lib=static=mbedtls");

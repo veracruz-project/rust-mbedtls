@@ -60,6 +60,7 @@ pub extern "C" fn mbedtls_internal_aes_decrypt(_ctx: *mut mbedtls_sys::types::ra
 }
 
 
+#[cfg(not(feature = "icecap"))]
 #[cfg(any(all(feature = "time", feature = "custom_gmtime_r"), sys_time_component = "custom"))]
 #[doc(hidden)]
 #[no_mangle]
@@ -95,6 +96,7 @@ pub unsafe extern "C" fn mbedtls_platform_gmtime_r(tt: *const mbedtls_sys::types
     tp
 }
 
+#[cfg(not(feature = "icecap"))]
 #[cfg(any(all(feature = "time", feature = "custom_time"), sys_time_component = "custom"))]
 #[doc(hidden)]
 #[no_mangle]
