@@ -96,8 +96,7 @@ impl super::BuildConfig {
                         .unwrap_or(&path);
                     if trimmed_path.len() > 1 {
                         cc.flag(&format!("--sysroot={}", trimmed_path));
-                        cc.flag("--no-standard-includes");
-                        cc.flag(&format!("-I{}/include", trimmed_path));
+                        cc.flag(&format!("--gcc-toolchain={}/bin", trimmed_path));
                     }
                 }
                 _ => {} // skip toolchains without a configured sysroot
