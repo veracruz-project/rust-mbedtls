@@ -83,7 +83,7 @@ int mbedtls_platform_entropy_poll(void *data, unsigned char *output, size_t len,
  * Since there is no wrapper in the libc yet, use the generic syscall wrapper
  * available in GNU libc and compatible libc's (eg uClibc).
  */
-#if ((defined(__linux__) && !defined(MBEDTLS_ICECAP) && defined(__GLIBC__)) || defined(__midipix__))
+#if ((defined(__linux__) && defined(__GLIBC__)) || defined(__midipix__))
 #include <unistd.h>
 #include <sys/syscall.h>
 #if defined(SYS_getrandom)
@@ -103,11 +103,10 @@ static int getrandom_wrapper(void *buf, size_t buflen, unsigned int flags)
 #endif /* SYS_getrandom */
 #endif /* __linux__ || __midipix__ */
 
-#if defined(__FreeBSD__) || defined(__DragonFly__) || defined(MBEDTLS_ICECAP)
+#if defined(__FreeBSD__) || defined(__DragonFly__)
 #include <sys/param.h>
 #if (defined(__FreeBSD__) && __FreeBSD_version >= 1200000) || \
-    (defined(__DragonFly__) && __DragonFly_version >= 500700) || \
-    defined(MBEDTLS_ICECAP)
+    (defined(__DragonFly__) && __DragonFly_version >= 500700)
 #include <errno.h>
 #include <sys/random.h>
 #define HAVE_GETRANDOM
@@ -159,10 +158,8 @@ static int sysctl_arnd_wrapper(unsigned char *buf, size_t buflen)
 int mbedtls_platform_entropy_poll(void *data,
                                   unsigned char *output, size_t len, size_t *olen)
 {
-#if !defined(MBEDTLS_ICECAP)
     FILE *file;
     size_t read_len;
-#endif
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     ((void) data);
 
@@ -171,10 +168,8 @@ int mbedtls_platform_entropy_poll(void *data,
     if (ret >= 0) {
         *olen = ret;
         return 0;
-#if !defined(MBEDTLS_ICECAP)
     } else if (errno != ENOSYS) {
         return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
-#endif
     }
     /* Fall through if the system call isn't known. */
 #else
@@ -191,9 +186,6 @@ int mbedtls_platform_entropy_poll(void *data,
     return 0;
 #else
 
-#if defined(MBEDTLS_ICECAP)
-    return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
-#else
     *olen = 0;
 
     file = fopen("/dev/urandom", "rb");
@@ -212,7 +204,6 @@ int mbedtls_platform_entropy_poll(void *data,
 
     fclose(file);
     *olen = len;
-#endif
 
     return 0;
 #endif /* HAVE_SYSCTL_ARND */

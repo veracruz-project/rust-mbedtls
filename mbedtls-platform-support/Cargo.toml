@@ -45,4 +45,3 @@ force_aesni_support = ["mbedtls-sys-auto/custom_has_support", "mbedtls-sys-auto/
 aesni = ["mbedtls-sys-auto/aesni"]
 tls13 = ["mbedtls-sys-auto/tls13"]
 rdrand = []
-icecap = []

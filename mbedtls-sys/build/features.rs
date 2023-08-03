@@ -53,9 +53,6 @@ impl Features {
                 components.insert("fs");
                 components.insert("entropy");
             }
-            if cfg!(feature = "icecap") {
-                components.insert("entropy");
-            }
         }
         if let Some(components) = self.with_feature("time") {
             if !have_custom_gmtime_r && env_have_target_cfg("family", "unix") {
