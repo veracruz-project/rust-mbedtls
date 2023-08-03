@@ -75,7 +75,6 @@ dsa = ["std", "yasna", "num-bigint", "bit-vec"]
 async = ["std", "tokio", "tokio/net", "tokio/io-util", "tokio/macros"]
 async-rt = ["async", "tokio/rt", "tokio/sync", "tokio/rt-multi-thread"]
 tls13 = ["mbedtls-sys-auto/tls13", "mbedtls-platform-support/tls13"]
-icecap = ["mbedtls-sys-auto/icecap", "mbedtls-platform-support/icecap"]
 monitor_getrandom = []
 
 [[example]]
