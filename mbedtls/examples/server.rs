@@ -26,6 +26,9 @@ use support::entropy::entropy_new;
 use support::keys;
 use support::rand::test_rng;
 
+#[cfg(feature = "debug")]
+use std::borrow::Cow;
+
 fn listen<E, F: FnMut(TcpStream) -> Result<(), E>>(mut handle_client: F) -> Result<(), E> {
     let sock = TcpListener::bind("127.0.0.1:8080").unwrap();
     for conn in sock.incoming().map(Result::unwrap) {
@@ -42,6 +45,18 @@ fn result_main() -> TlsResult<()> {
     let cert = Arc::new(Certificate::from_pem_multiple(keys::PEM_CERT.as_bytes())?);
     let key = Arc::new(Pk::from_private_key(&mut test_rng(),keys::PEM_KEY.as_bytes(), None)?);
     let mut config = Config::new(Endpoint::Server, Transport::Stream, Preset::Default);
+
+    // Configure debugging
+    #[cfg(feature = "debug")]
+    {
+        let dbg_callback =
+            |level: i32, file: Cow<'_, str>, line: i32, message: Cow<'_, str>| {
+                print!("{} {}:{} {}", level, file, line, message);
+            };
+        config.set_dbg_callback(dbg_callback);
+        unsafe { mbedtls::set_global_debug_threshold(4); }
+    }
+
     config.set_rng(rng);
     config.push_cert(cert, key)?;
 
