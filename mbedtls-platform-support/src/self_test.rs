@@ -117,8 +117,6 @@ pub use mbedtls_sys::{
     ripemd160_self_test as ripemd160,
     rsa_self_test as rsa,
     sha1_self_test as sha1,
-    sha224_self_test as sha224,
     sha256_self_test as sha256,
-    sha384_self_test as sha384,
     sha512_self_test as sha512,
 };

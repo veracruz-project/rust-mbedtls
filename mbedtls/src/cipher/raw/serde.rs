@@ -234,7 +234,7 @@ unsafe fn deserialize_raw_cipher(raw: SavedRawCipher, padding: raw::CipherPaddin
             // aes_ctx.rk needs to be a pointer to aes_ctx.buf, which holds the round keys.
             // We don't adjust for the padding needed on VIA Padlock (see definition of
             // mbedtls_aes_context in the mbedTLS source).
-            (*ret_aes_ctx).private_rk_offset = 0;
+            (*ret_aes_ctx).private_rk = &mut (*ret_aes_ctx).private_buf[0];
         }
         (CIPHER_ID_ARIA, AlgorithmContext::Aria(Bytes(aria_ctx))) => {
             *(cipher_context.private_cipher_ctx as *mut aria_context) = aria_ctx
@@ -365,7 +365,7 @@ unsafe impl BytesSerde for gcm_context {}
 // we are building for. So to be platform independent, the expected sizes are calculated from the
 // fixed-sized fields, the number and size of pointer-sized fields and some alignment bytes.
 
-const _SIZE_OF_CIPHER_CONTEXT: usize = size_of::<usize>() + 2 * 4 + 2 * size_of::<usize>() + 16 + size_of::<usize>() + 16 + 3 * size_of::<usize>();
+const _SIZE_OF_CIPHER_CONTEXT: usize = size_of::<usize>() + 2 * 4 + 2 * size_of::<usize>() + 16 + size_of::<usize>() + 16 + 3 * size_of::<usize>() + 8;
 const _SIZE_OF_AES_CONTEXT: usize = 2 * size_of::<usize>() + 4 * 68;
 const _SIZE_OF_DES_CONTEXT: usize = 4 * 32;
 const _SIZE_OF_DES3_CONTEXT: usize = 4 * 96;

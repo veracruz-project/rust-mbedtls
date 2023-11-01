@@ -64,16 +64,15 @@ for line in open('vendor/include/mbedtls/mbedtls_config.h').readlines():
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 const DEFAULT_DEFINES: &'static [CDefine] = &[
-    ("MBEDTLS_CONFIG_VERSION",                            DefinedAs("0x03040000")),
+    ("MBEDTLS_CONFIG_VERSION",                            Undefined), // default: 0x03000000
     ("MBEDTLS_HAVE_ASM",                                  Defined),
     ("MBEDTLS_NO_UDBL_DIVISION",                          Undefined),
     ("MBEDTLS_NO_64BIT_MULTIPLICATION",                   Undefined),
     ("MBEDTLS_HAVE_SSE2",                                 Undefined),
-    ("MBEDTLS_HAVE_TIME",                                 Undefined),
-    ("MBEDTLS_HAVE_TIME_DATE",                            Undefined),
+    ("MBEDTLS_HAVE_TIME",                                 Defined),
+    ("MBEDTLS_HAVE_TIME_DATE",                            Defined),
     ("MBEDTLS_PLATFORM_MEMORY",                           Undefined),
     ("MBEDTLS_PLATFORM_NO_STD_FUNCTIONS",                 Undefined),
-    ("MBEDTLS_PLATFORM_SETBUF_ALT",                       Undefined),
     ("MBEDTLS_PLATFORM_EXIT_ALT",                         Undefined),
     ("MBEDTLS_PLATFORM_TIME_ALT",                         Undefined),
     ("MBEDTLS_PLATFORM_FPRINTF_ALT",                      Undefined),
@@ -82,7 +81,6 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_PLATFORM_VSNPRINTF_ALT",                    Undefined),
     ("MBEDTLS_PLATFORM_NV_SEED_ALT",                      Undefined),
     ("MBEDTLS_PLATFORM_SETUP_TEARDOWN_ALT",               Undefined),
-    ("MBEDTLS_PLATFORM_MS_TIME_ALT",                      Undefined),
     ("MBEDTLS_DEPRECATED_WARNING",                        Undefined),
     ("MBEDTLS_DEPRECATED_REMOVED",                        Undefined),
     ("MBEDTLS_TIMING_ALT",                                Undefined),
@@ -137,7 +135,7 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_AES_ROM_TABLES",                            Undefined),
     ("MBEDTLS_AES_FEWER_TABLES",                          Undefined),
     ("MBEDTLS_CAMELLIA_SMALL_MEMORY",                     Undefined),
-    ("MBEDTLS_CHECK_RETURN_WARNING",                      Defined),
+    ("MBEDTLS_CHECK_RETURN_WARNING",                      Undefined),
     ("MBEDTLS_CIPHER_MODE_CBC",                           Defined),
     ("MBEDTLS_CIPHER_MODE_CFB",                           Defined),
     ("MBEDTLS_CIPHER_MODE_CTR",                           Defined),
@@ -164,7 +162,7 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_ECP_DP_CURVE448_ENABLED",                   Defined),
     ("MBEDTLS_ECP_NIST_OPTIM",                            Defined),
     ("MBEDTLS_ECP_RESTARTABLE",                           Undefined),
-    ("MBEDTLS_ECDSA_DETERMINISTIC",                       Undefined),
+    ("MBEDTLS_ECDSA_DETERMINISTIC",                       Defined),
     ("MBEDTLS_KEY_EXCHANGE_PSK_ENABLED",                  Defined),
     ("MBEDTLS_KEY_EXCHANGE_DHE_PSK_ENABLED",              Defined),
     ("MBEDTLS_KEY_EXCHANGE_ECDHE_PSK_ENABLED",            Defined),
@@ -179,9 +177,9 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_PK_PARSE_EC_EXTENDED",                      Defined),
     ("MBEDTLS_ERROR_STRERROR_DUMMY",                      Defined),
     ("MBEDTLS_GENPRIME",                                  Defined),
-    ("MBEDTLS_FS_IO",                                     Undefined),
+    ("MBEDTLS_FS_IO",                                     Defined),
     ("MBEDTLS_NO_DEFAULT_ENTROPY_SOURCES",                Undefined),
-    ("MBEDTLS_NO_PLATFORM_ENTROPY",                       Defined),
+    ("MBEDTLS_NO_PLATFORM_ENTROPY",                       Undefined),
     ("MBEDTLS_ENTROPY_FORCE_SHA256",                      Undefined),
     ("MBEDTLS_ENTROPY_NV_SEED",                           Undefined),
     ("MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER",           Undefined),
@@ -192,6 +190,7 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_PKCS1_V21",                                 Defined),
     ("MBEDTLS_PSA_CRYPTO_BUILTIN_KEYS",                   Undefined),
     ("MBEDTLS_PSA_CRYPTO_CLIENT",                         Undefined),
+    ("MBEDTLS_PSA_CRYPTO_DRIVERS",                        Undefined),
     ("MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG",                   Undefined),
     ("MBEDTLS_PSA_CRYPTO_SPM",                            Undefined),
     ("MBEDTLS_PSA_INJECT_ENTROPY",                        Undefined),
@@ -201,7 +200,6 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_SHA512_SMALLER",                            Undefined),
     ("MBEDTLS_SSL_ALL_ALERT_MESSAGES",                    Defined),
     ("MBEDTLS_SSL_DTLS_CONNECTION_ID",                    Undefined),
-    ("MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT",             Undefined),
     ("MBEDTLS_SSL_ASYNC_PRIVATE",                         Undefined),
     ("MBEDTLS_SSL_CONTEXT_SERIALIZATION",                 Defined),
     ("MBEDTLS_SSL_DEBUG_ALL",                             Undefined),
@@ -210,15 +208,9 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_SSL_KEEP_PEER_CERTIFICATE",                 Defined),
     ("MBEDTLS_SSL_RENEGOTIATION",                         Defined),
     ("MBEDTLS_SSL_MAX_FRAGMENT_LENGTH",                   Defined),
-    ("MBEDTLS_SSL_RECORD_SIZE_LIMIT",                     Undefined),
     ("MBEDTLS_SSL_PROTO_TLS1_2",                          Defined),
-    ("MBEDTLS_SSL_PROTO_TLS1_3",                          Undefined),
+    ("MBEDTLS_SSL_PROTO_TLS1_3",                          Defined),
     ("MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE",             Undefined),
-    ("MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_PSK_ENABLED",           Undefined),
-    ("MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_EPHEMERAL_ENABLED",     Undefined),
-    ("MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_PSK_EPHEMERAL_ENABLED", Undefined),
-    ("MBEDTLS_SSL_EARLY_DATA",                            Undefined),
-    ("MBEDTLS_SSL_MAX_EARLY_DATA_SIZE",                   Undefined),
     ("MBEDTLS_SSL_PROTO_DTLS",                            Defined),
     ("MBEDTLS_SSL_ALPN",                                  Defined),
     ("MBEDTLS_SSL_DTLS_ANTI_REPLAY",                      Defined),
@@ -227,20 +219,22 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_SSL_DTLS_CLIENT_PORT_REUSE",                Defined),
     ("MBEDTLS_SSL_SESSION_TICKETS",                       Defined),
     ("MBEDTLS_SSL_SERVER_NAME_INDICATION",                Defined),
+    ("MBEDTLS_SSL_TLS_ATTESTATION",                       Defined),
+    ("MBEDTLS_SSL_ATTESTATION_NONCE_LEN_MAX",             DefinedAs("32")), // default: 32
+    ("MBEDTLS_PARSEC_ATTESTATION",                        Defined),
     ("MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH",                Undefined),
     ("MBEDTLS_TEST_CONSTANT_FLOW_MEMSAN",                 Undefined),
     ("MBEDTLS_TEST_CONSTANT_FLOW_VALGRIND",               Undefined),
     ("MBEDTLS_TEST_HOOKS",                                Undefined),
     ("MBEDTLS_THREADING_ALT",                             Undefined),
     ("MBEDTLS_THREADING_PTHREAD",                         Undefined),
-    ("MBEDTLS_USE_PSA_CRYPTO",                            Undefined),
+    ("MBEDTLS_USE_PSA_CRYPTO",                            Defined),
     ("MBEDTLS_PSA_CRYPTO_CONFIG",                         Undefined),
     ("MBEDTLS_VERSION_FEATURES",                          Defined),
     ("MBEDTLS_X509_TRUSTED_CERTIFICATE_CALLBACK",         Undefined),
     ("MBEDTLS_X509_REMOVE_INFO",                          Undefined),
     ("MBEDTLS_X509_RSASSA_PSS_SUPPORT",                   Defined),
-    ("MBEDTLS_AESNI_C",                                   Undefined),
-    ("MBEDTLS_AESCE_C",                                   Undefined),
+    ("MBEDTLS_AESNI_C",                                   Defined),
     ("MBEDTLS_AES_C",                                     Defined),
     ("MBEDTLS_ASN1_PARSE_C",                              Defined),
     ("MBEDTLS_ASN1_WRITE_C",                              Defined),
@@ -254,41 +248,38 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_CIPHER_C",                                  Defined),
     ("MBEDTLS_CMAC_C",                                    Defined),
     ("MBEDTLS_CTR_DRBG_C",                                Defined),
-    ("MBEDTLS_DEBUG_C",                                   Undefined),
+    ("MBEDTLS_DEBUG_C",                                   Defined),
     ("MBEDTLS_DES_C",                                     Defined),
     ("MBEDTLS_DHM_C",                                     Defined),
     ("MBEDTLS_ECDH_C",                                    Defined),
     ("MBEDTLS_ECDSA_C",                                   Defined),
     ("MBEDTLS_ECJPAKE_C",                                 Defined),
     ("MBEDTLS_ECP_C",                                     Defined),
-    ("MBEDTLS_ENTROPY_C",                                 Undefined),
+    ("MBEDTLS_ENTROPY_C",                                 Defined),
     ("MBEDTLS_ERROR_C",                                   Defined),
     ("MBEDTLS_GCM_C",                                     Defined),
     ("MBEDTLS_HKDF_C",                                    Defined),
     ("MBEDTLS_HMAC_DRBG_C",                               Defined),
-    ("MBEDTLS_LMS_C",                                     Undefined),
-    ("MBEDTLS_LMS_PRIVATE",                               Undefined),
     ("MBEDTLS_NIST_KW_C",                                 Defined),
     ("MBEDTLS_MD_C",                                      Defined),
     ("MBEDTLS_MD5_C",                                     Defined),
     ("MBEDTLS_MEMORY_BUFFER_ALLOC_C",                     Undefined),
-    ("MBEDTLS_NET_C",                                     Undefined),
+    ("MBEDTLS_NET_C",                                     Defined),
     ("MBEDTLS_OID_C",                                     Defined),
-    ("MBEDTLS_PADLOCK_C",                                 Undefined),
+    ("MBEDTLS_PADLOCK_C",                                 Defined),
     ("MBEDTLS_PEM_PARSE_C",                               Defined),
     ("MBEDTLS_PEM_WRITE_C",                               Defined),
     ("MBEDTLS_PK_C",                                      Defined),
     ("MBEDTLS_PK_PARSE_C",                                Defined),
     ("MBEDTLS_PK_WRITE_C",                                Defined),
     ("MBEDTLS_PKCS5_C",                                   Defined),
-    ("MBEDTLS_PKCS7_C",                                   Defined),
     ("MBEDTLS_PKCS12_C",                                  Defined),
-    ("MBEDTLS_PLATFORM_C",                                Undefined),
+    ("MBEDTLS_PLATFORM_C",                                Defined),
     ("MBEDTLS_POLY1305_C",                                Defined),
-    ("MBEDTLS_PSA_CRYPTO_C",                              Undefined),
-    ("MBEDTLS_PSA_CRYPTO_SE_C",                           Undefined),
-    ("MBEDTLS_PSA_CRYPTO_STORAGE_C",                      Undefined),
-    ("MBEDTLS_PSA_ITS_FILE_C",                            Undefined),
+    ("MBEDTLS_PSA_CRYPTO_C",                              Defined),
+    ("MBEDTLS_PSA_CRYPTO_SE_C",                           Defined),
+    ("MBEDTLS_PSA_CRYPTO_STORAGE_C",                      Defined),
+    ("MBEDTLS_PSA_ITS_FILE_C",                            Defined),
     ("MBEDTLS_RIPEMD160_C",                               Defined),
     ("MBEDTLS_RSA_C",                                     Defined),
     ("MBEDTLS_SHA1_C",                                    Defined),
@@ -307,7 +298,7 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_SSL_SRV_C",                                 Defined),
     ("MBEDTLS_SSL_TLS_C",                                 Defined),
     ("MBEDTLS_THREADING_C",                               Undefined),
-    ("MBEDTLS_TIMING_C",                                  Undefined),
+    ("MBEDTLS_TIMING_C",                                  Defined),
     ("MBEDTLS_VERSION_C",                                 Defined),
     ("MBEDTLS_X509_USE_C",                                Defined),
     ("MBEDTLS_X509_CRT_PARSE_C",                          Defined),
@@ -316,7 +307,7 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_X509_CREATE_C",                             Defined),
     ("MBEDTLS_X509_CRT_WRITE_C",                          Defined),
     ("MBEDTLS_X509_CSR_WRITE_C",                          Defined),
-    ("MBEDTLS_MPI_WINDOW_SIZE",                           Undefined), // default: 2
+    ("MBEDTLS_MPI_WINDOW_SIZE",                           Undefined), // default: 6
     ("MBEDTLS_MPI_MAX_SIZE",                              Undefined), // default: 1024
     ("MBEDTLS_CTR_DRBG_ENTROPY_LEN",                      Undefined), // default: 48
     ("MBEDTLS_CTR_DRBG_RESEED_INTERVAL",                  Undefined), // default: 10000
@@ -335,7 +326,6 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_MEMORY_ALIGN_MULTIPLE",                     Undefined), // default: 4
     ("MBEDTLS_PLATFORM_STD_CALLOC",                       Undefined), // default: calloc
     ("MBEDTLS_PLATFORM_STD_FREE",                         Undefined), // default: free
-    ("MBEDTLS_PLATFORM_STD_SETBUF",                       Undefined), // default: setbuf
     ("MBEDTLS_PLATFORM_STD_EXIT",                         Undefined), // default: exit
     ("MBEDTLS_PLATFORM_STD_TIME",                         Undefined), // default: time
     ("MBEDTLS_PLATFORM_STD_FPRINTF",                      Undefined), // default: fprintf
@@ -348,7 +338,6 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_PLATFORM_CALLOC_MACRO",                     Undefined), // default: calloc
     ("MBEDTLS_PLATFORM_FREE_MACRO",                       Undefined), // default: free
     ("MBEDTLS_PLATFORM_EXIT_MACRO",                       Undefined), // default: exit
-    ("MBEDTLS_PLATFORM_SETBUF_MACRO",                     Undefined), // default: setbuf
     ("MBEDTLS_PLATFORM_TIME_MACRO",                       Undefined), // default: time
     ("MBEDTLS_PLATFORM_TIME_TYPE_MACRO",                  Undefined), // default: time_t
     ("MBEDTLS_PLATFORM_FPRINTF_MACRO",                    Undefined), // default: fprintf
@@ -357,8 +346,6 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_PLATFORM_VSNPRINTF_MACRO",                  Undefined), // default: vsnprintf
     ("MBEDTLS_PLATFORM_NV_SEED_READ_MACRO",               Undefined), // default: mbedtls_platform_std_nv_seed_read
     ("MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO",              Undefined), // default: mbedtls_platform_std_nv_seed_write
-    ("MBEDTLS_PLATFORM_MS_TIME_TYPE_MACRO",               Undefined), // default: int64_t
-    ("MBEDTLS_PRINTF_MS_TIME",                            Undefined), // default: PRId64
     ("MBEDTLS_CHECK_RETURN",                              Undefined), // default: __attribute__
     ("MBEDTLS_PSA_HMAC_DRBG_MD_TYPE",                     Undefined), // default: MBEDTLS_MD_SHA256
     ("MBEDTLS_PSA_KEY_SLOT_COUNT",                        Undefined), // default: 32
@@ -372,10 +359,8 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_SSL_DTLS_MAX_BUFFERING",                    Undefined), // default: 32768
     ("MBEDTLS_PSK_MAX_LEN",                               Undefined), // default: 32
     ("MBEDTLS_SSL_COOKIE_TIMEOUT",                        Undefined), // default: 60
+    ("MBEDTLS_TLS_EXT_CID",                               Undefined), // default: 254
     ("MBEDTLS_SSL_CIPHERSUITES",                          Undefined), // default: MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
-    ("MBEDTLS_SSL_TLS1_3_TICKET_AGE_TOLERANCE",           Undefined),
-    ("MBEDTLS_SSL_TLS1_3_TICKET_NONCE_LENGTH",            Undefined),
-    ("MBEDTLS_SSL_TLS1_3_DEFAULT_NEW_SESSION_TICKETS",    Undefined),
     ("MBEDTLS_X509_MAX_INTERMEDIATE_CA",                  Undefined), // default: 8
     ("MBEDTLS_X509_MAX_FILE_PATH_LEN",                    Undefined), // default: 512
     ("MBEDTLS_PLATFORM_ZEROIZE_ALT",                      Undefined),

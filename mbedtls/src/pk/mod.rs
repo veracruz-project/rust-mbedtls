@@ -626,7 +626,7 @@ impl Pk {
     ) -> Result<usize> {
         if self.pk_type() == Type::Rsa {
             let ctx = unsafe { pk_rsa(self.inner) };
-            if unsafe { rsa_get_padding_mode(ctx) == RAW_RSA_DECRYPT } {
+            if unsafe { (*ctx).private_padding  == RAW_RSA_DECRYPT } {
                 let olen = self.len() / 8;
                 if plain.len() < olen {
                     return Err(codes::RsaOutputTooLarge.into());
@@ -675,7 +675,7 @@ impl Pk {
             return Err(codes::PkTypeMismatch.into());
         }
         let ctx = unsafe { pk_rsa(self.inner) };
-        if unsafe { rsa_get_padding_mode(ctx) != RSA_PKCS_V21 } {
+        if unsafe { (*ctx).private_padding != RSA_PKCS_V21 } {
             return Err(codes::RsaInvalidPadding.into());
         }
 
@@ -732,7 +732,7 @@ impl Pk {
             return Err(codes::PkTypeMismatch.into());
         }
         let ctx = unsafe { pk_rsa(self.inner) };
-        if unsafe { rsa_get_padding_mode(ctx) != RSA_PKCS_V21 } {
+        if unsafe { (*ctx).private_padding != RSA_PKCS_V21 } {
             return Err(codes::RsaInvalidPadding.into());
         }
         let olen = self.len() / 8;
@@ -852,7 +852,8 @@ impl Pk {
             Ok(ret)
         } else if self.pk_type() == Type::Rsa {
             // Reject sign_deterministic being use for PSS
-            if unsafe { rsa_get_padding_mode(pk_rsa(self.inner)) } != RSA_PKCS_V15 {
+            if unsafe { (*(self.inner.private_pk_ctx as *mut rsa_context)).private_padding } != RSA_PKCS_V15 {
+
                 return Err(codes::PkInvalidAlg.into());
             }
 

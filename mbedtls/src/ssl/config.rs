@@ -371,10 +371,10 @@ impl Config {
         set_session_tickets(u: UseSessionTickets) = ssl_conf_session_tickets
     );
 
-    #[cfg(feature = "tls13")]
+    /*#[cfg(feature = "tls13")]
     setter!(
         set_new_session_tickets_count(cnt: u16) = ssl_conf_new_session_tickets
-    );
+    );*/
 
     setter!(set_renegotiation(u: Renegotiation) = ssl_conf_renegotiation);
 
@@ -519,6 +519,10 @@ impl Config {
     pub fn set_dtls_cookies<T: CookieCallback + 'static>(&mut self, dtls_cookies: Arc<T>) {
         unsafe { ssl_conf_dtls_cookies(self.into(), Some(T::cookie_write), Some(T::cookie_check), dtls_cookies.data_ptr()) };
         self.dtls_cookies = Some(dtls_cookies);
+    }
+
+    pub fn get_mut_inner(&mut self) -> &mut ssl_config {
+        &mut self.inner
     }
 }
 

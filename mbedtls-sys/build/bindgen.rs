@@ -69,7 +69,12 @@ impl super::BuildConfig {
             let _ = writeln!(header, "#include <mbedtls/{}>", h);
         }
         // add psa header
-        header.push_str("#include <psa/crypto.h>\n");
+        // XXX: For some reason <psa/crypto.h> prevents symbols in <psa/crypto_values.h> from generating
+        // XXX: Also, commenting out most PSA headers doesn't seem to make any difference??
+        //header.push_str("#include <psa/crypto.h>\n");
+        //header.push_str("#include <psa/crypto_values.h>\n");
+        //header.push_str("#include <psa/crypto_struct.h>\n");
+        header.push_str("#include <psa/crypto_se_driver.h>\n");
 
         let mut cc = cc::Build::new();
         if cc.get_compiler().is_like_msvc() {
@@ -108,6 +113,7 @@ impl super::BuildConfig {
             .clang_args(cc.get_compiler().args().iter().map(|arg| arg.to_str().unwrap()))
             .header_contents("bindgen-input.h", &header)
             .allowlist_function("^(?i)mbedtls_.*")
+            .allowlist_function("^(?i)psa_.*")
             .wrap_static_fns(true)
             .wrap_static_fns_path(&self.static_wrappers_c)
             .generate().expect("bindgen error");
