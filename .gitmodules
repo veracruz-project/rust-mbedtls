@@ -1,0 +1,4 @@
+[submodule "mbedtls-sys/vendor"]
+	path = mbedtls-sys/vendor
+	url = https://github.com/gbryant-arm/mbedtls
+	branch = parsec-attestation-client
