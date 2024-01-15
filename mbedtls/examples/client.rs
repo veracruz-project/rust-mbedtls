@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use mbedtls::rng::CtrDrbg;
 use mbedtls::ssl::config::{Endpoint, Preset, Transport};
-use mbedtls::ssl::{Config, Context};
+use mbedtls::ssl::{Config, Context, Version};
 use mbedtls::x509::Certificate;
 use mbedtls::Result as TlsResult;
 
@@ -39,7 +39,9 @@ fn result_main(addr: &str) -> TlsResult<()> {
     unsafe {
         ret = register_se_driver(location, parsec_se_driver);
     }
-    if ret != 0 { } // TODO: handle error
+    if ret != 0 {
+        panic!("Register failed (status = {})\n", ret);
+    }
     let mut key_handle: key_handle_t = 0;
 
     let entropy = Arc::new(entropy_new());
@@ -61,9 +63,15 @@ fn result_main(addr: &str) -> TlsResult<()> {
     config.set_rng(rng);
     config.set_ca_list(cert, None);
 
+    config.set_min_version(Version::Tls13)?;
+    config.set_max_version(Version::Tls13)?;
 
     // Generate PSA key
-    let client_attestation_type_list: [u16; 1] = [TLS_ATTESTATION_TYPE_EAT as u16];
+    let client_attestation_type_list: [u16; 3] = [
+        TLS_ATTESTATION_TYPE_EAT as u16,
+        TLS_ATTESTATION_TYPE_NONE as u16,
+        TLS_ATTESTATION_TYPE_NONE as u16,
+    ];
     let key_pair_id: key_id_t = 0xBEEF;
     unsafe {
         ssl_conf_client_attestation_type(config.get_mut_inner(),client_attestation_type_list.as_ptr());
@@ -77,7 +85,9 @@ fn result_main(addr: &str) -> TlsResult<()> {
         set_key_bits(&mut key_pair_attributes, 256);
 
         let ret = generate_key(&key_pair_attributes, &mut key_handle);
-        if ret != 0 { } // TODO: handle error
+        if ret != 0 {
+            panic!("psa_generate_key failed (status = {})\n", ret);
+        }
         ssl_conf_client_rpk(config.get_mut_inner(), &mut key_handle);
     }
 
